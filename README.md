@@ -1,15 +1,15 @@
 # Introduction
 
-A minimal interpreted logic programming language for deriving facts from rules and querying relational knowledge.
+An interpreted logic programming language for deriving facts from rules and querying relational knowledge.
 
 ![status](https://img.shields.io/badge/status-WIP-red)
 ![tests](https://img.shields.io/badge/test--coverage-90%25-orange)
 ![coverage](https://img.shields.io/badge/dependencies-none-green)
 
-
-Logiks is designed to be:
-- Easy to read and write by humans
-- Easy to embed in a TypeScript environment
+Logiks is intentionally minimal.  
+It focuses on relational reasoning without arithmetic, negation, or side effects.  
+The language is designed to be readable by non-programmers, while remaining easy to embed in TypeScript applications.  
+It favors explicit syntax and predictable evaluation over performance optimizations.
 
 ## Example
 
@@ -29,7 +29,9 @@ let output = interpreter.process([
 ])
 
 console.log(output)
-// Expected output: ['William and Harry.']
+// Expected output: [
+//   'William and Harry.'
+// ]
 ```
 
 ## Getting started
@@ -74,7 +76,7 @@ let output = interpreter.process([
   '<A> - mother - <B> => <A> - parent - <B>!',
   'Elizabeth - parent - Jimmy?',
   'Elizabeth - parent - *?',
-  '*- parent - *?',
+  '* - parent - *?',
 ])
 // output = [
   'No.',
@@ -96,7 +98,7 @@ The interpreter resets by clearing all previously stored facts and rules.
 
 # Interpreter specifications
 
-The next sections explains the inner workings of the interpreter.
+The next sections explain the inner workings of the interpreter.
 
 ## Overview
 The Logiks interpreter works in a simple loop:
@@ -105,7 +107,7 @@ The Logiks interpreter works in a simple loop:
   - If the statement produces output, append it to the result list
 - Return all output
 
-Errors during evaluation result in halting the programming and returning the error as output.
+Errors during evaluation result in halting the program and returning the error as output.
 
 Every line of input is either one of the three basic building blocks of Logiks:  
 - Facts
@@ -133,9 +135,9 @@ console.log(output)
 // Expected output: []
 ```
 The identifiers need to be separated by a `-` and the fact has to end with a `.`
-Neither the subject, relation, nor object needs to be declared beforehand. Duplicate facts result in an error.
+Neither the subject, relation, nor object needs to be declared beforehand. Logiks doesn't allow duplicates in its knowledge base, so adding a fact that already exists, results in an error.
 
-Facts are stored, but not applied to rules directly. This only happens when processing a query.
+Facts and rules are stored, and evaluated only during query execution.
 
 ## Rule
 A rule derives new facts from known facts.
@@ -157,9 +159,10 @@ console.log(output)
 // Expected output: []
 ```
 
-Both the condition and the consequence have to be in the form of a fact and need to be separated by the implication arrow `=>`. A rule has to end with a `!`. Duplicate facts result in an error.
+Both the condition and the consequence have to be in the form of a fact and need to be separated by the implication arrow `=>`. A rule has to end with a `!`. Logiks doesn't allow duplicates in its knowledge base, so adding a rule that already exists, results in an error.
 
 Variables are used to connect the condition and the consequence. Variables are enclosed by angle brackets: `<>`. Important constraints:
+- Each rule application uses fresh variable bindings. Variables are scoped to the rule in which they appear.
 - Only subjects and objects may be variables. A relation can't.
 - All variables used in the consequence must also appear in the condition.
 
@@ -192,7 +195,14 @@ The identifiers need to be separated by a `-` and the query has to end with a `?
 The response format depends on the number of * wildcards in the query:
 - No `*`: `Yes.` or `No.`.
 - One `*`: A list of matching values for that position.
-- Multiple `*`s: A list of matching relations.
+- Multiple `*`s: A list of matching facts.
+
+Results are returned in deterministic depth-first derivation order. 
+
+Results are formatted as human-readable strings. If multiple results are returned, they are formatted as a natural-language list:
+- One result: "A."
+- Two results: "A and B."
+- Three or more results: "A, B and C."
 
 The query `* - * - *?` basically means: tell me every relation you know.
 
@@ -211,32 +221,37 @@ let output = interpreter.process([
   'Elizabeth - grandparent - William?',
   'Elizabeth - * - William?',
   '* - grandparent - *?',
-  '* - * - *',
+  '* - * - *?',
 ])
 
 console.log(output)
 /* 
-Expected output: Array [
+Expected output: [
   'Yes.',
   'grandparent.',
   'Elizabeth - grandparent - William and Elizabeth - grandparent - Harry.',
-  'Elizabeth - mother - Charles, Elizabeth - parent - Charles, Charles - father - William, Charles - parent - William, Elizabeth - grandparent - William, Charles - father - Harry, Charles - parent - Harry, Elizabeth - grandparent - Harry',
+  'Elizabeth - mother - Charles, Elizabeth - parent - Charles, Charles - father - William, Charles - parent - William, Elizabeth - grandparent - William, Charles - father - Harry, Charles - parent - Harry and Elizabeth - grandparent - Harry.',
 ]
 ```
 
-As the example shows, the order of the output aligns with the order of the queries. Duplicates are filtered out.   
+As the example shows, the order of the output aligns with the order of the queries. Duplicate matches within a single query result are removed before formatting.
 
 ## Evaluation method
-Logiks is using on-demand backward chaining.
-- Facts and rules are stored.
-- When a query is executed:
-  - All matching facts are collected.
-  - Rules are applied iteratively (depth-first)
-  - Newly derived facts are added to a temporary working set.
-  - Evaluation continues until no new facts are derived.
-- Duplicates are removed before returning the output.
+Logiks uses goal-directed backward chaining.
 
-Logiks prevents infinite or circular rule recursion through query memoization. When evaluating a query, Logiks attempts to satisfy it by applying rules whose consequences match the query. For each matching rule, the rule’s condition(s) are evaluated as subqueries. Each subquery is memoized during the evaluation of the original query. If a subquery is encountered that has already been evaluated in the current evaluation chain, Logiks does not reapply rules to that subquery. Instead, it is evaluated only against known facts.
+Facts and rules are stored.
+
+When a query is executed:
+- The query is matched against known facts.
+- Rules whose consequences match the query are selected.
+- Their conditions are evaluated recursively as subqueries.
+- Derived matches are collected and returned.
+
+Evaluation proceeds depth-first.
+
+Derived facts are not stored.
+
+To prevent infinite recursion caused by cyclic rules, Logiks memoizes subqueries within the scope of a single top-level query. If a subquery has already been evaluated, rule expansion is skipped and only known facts are considered.
 
 ## Special characters
 Logiks is case-sensitive.
@@ -256,16 +271,12 @@ In its current state, it supports relational logic at a very basic level.
 
 Implemented:
 - Adding facts
-- Adding rules (single condition in engine only)
-- Evaluating query
-
-Work in progress:
-- Add support for adding rules via the interpreter
-- Add support for adding rules with multiple conditions in the engine and interpreter
+- Adding rules
+- Evaluating queries
 
 Future ideas:
-- Dive into combinatorics
-- Something with set theory
+- Support constraint logic
+- Support set theory
 
 # Test
 Tests are included (using `vitest`), to run the test:
@@ -276,17 +287,22 @@ npm run test
 ## Grammar (EBNF)
 
 ```ebnf
-statement = fact | rule | query, {fact | rule | query};
+program = { statement };
+
+statement = fact | rule | query;
 
 fact = subject "-" relation "-" object ".";
 subject = string;
 relation = string;
 object = string;
-string = [a-z]+;
+string = [A-Za-z_]+;
 
-rule = condition "=>" consequence "!";
-condition = rule_term "-" relation "-" rule_term {"&" rule_term "-" relation "-" rule_term};
+rule = conditions "=>" consequence "!";
+conditions = condition {"&" condition};
+condition = rule_term "-" relation "-" rule_term;
 consequence = rule_term "-" relation "-" rule_term;
+rule_term = string | variable;
+variable = "<" string ">";
 
 query = queryTerm "-" queryTerm "-" queryTerm "?";
 queryTerm = string | "*";
