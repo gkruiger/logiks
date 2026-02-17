@@ -3,7 +3,7 @@
 A minimal interpreted logic programming language for deriving facts from rules and querying relational knowledge.
 
 ![status](https://img.shields.io/badge/status-WIP-red)
-![tests](https://img.shields.io/badge/test--coverage-90%-green)
+![tests](https://img.shields.io/badge/test--coverage-90%25-orange)
 ![coverage](https://img.shields.io/badge/dependencies-none-green)
 
 
@@ -55,23 +55,37 @@ let output = interpreter.process([
   '<A> - mother - <B> => <A> - parent - <B>!',
   'Elizabeth - parent - *?',
 ])
-// output = ['Charles and William.']
+// output = [
+  'Charles and William.'
+]
 ```
 
 # Usage
 
 Logiks provides the following two methods:
 
-### process(input: string[]) : string[]
+### process(input: string[]): string[]
+
 
 ```ts
-let output = interpreter.process(['Elizabeth - mother - Charles.'])
-// output = []
+let output = interpreter.process([
+  'Elizabeth - mother - Charles.',
+  'Elizabeth - mother - William.',
+  '<A> - mother - <B> => <A> - parent - <B>!',
+  'Elizabeth - parent - Jimmy?',
+  'Elizabeth - parent - *?',
+  '*- parent - *?',
+])
+// output = [
+  'No.',
+  'Charles and William.',
+  'Elizabeth - parent - Charles and Elizabeth - parent - William.'
+]
 ```
 
-The interpreter processes the input one by one, returning an array of strings containing the output. 
+The interpreter processes the input one by one, and returns one string for each query, resulting in an array of strings as the total output. The order of the output matches the order of the queries.
 
-### reset() : void
+### reset(): void
 
 ```ts
 interpreter.reset()
@@ -88,7 +102,7 @@ The next sections explains the inner workings of the interpreter.
 The Logiks interpreter works in a simple loop:
 - While there is another line of input:
   - Evaluate the line of input
-  - If relevant: output add to all output 
+  - If the statement produces output, append it to the result list
 - Return all output
 
 Errors during evaluation result in halting the programming and returning the error as output.
@@ -213,9 +227,14 @@ Expected output: Array [
 As the example shows, the order of the output aligns with the order of the queries. Duplicates are filtered out.   
 
 ## Evaluation method
-Logiks is using on-demand backward chaining, which means that facts and rules are stored, but not applied directy. This only happens when a query is processed.
-
-While applying rules to facts, new facts may be derived. These derived facts can be used in the same query to derive even more facts. Derived facts are not stored.
+Logiks is using on-demand backward chaining.
+- Facts and rules are stored.
+- When a query is executed:
+  - All matching facts are collected.
+  - Rules are applied iteratively (depth-first)
+  - Newly derived facts are added to a temporary working set.
+  - Evaluation continues until no new facts are derived.
+- Duplicates are removed before returning the output.
 
 Logiks prevents infinite or circular rule recursion through query memoization. When evaluating a query, Logiks attempts to satisfy it by applying rules whose consequences match the query. For each matching rule, the rule’s condition(s) are evaluated as subqueries. Each subquery is memoized during the evaluation of the original query. If a subquery is encountered that has already been evaluated in the current evaluation chain, Logiks does not reapply rules to that subquery. Instead, it is evaluated only against known facts.
 
@@ -260,14 +279,15 @@ npm run test
 statement = fact | rule | query, {fact | rule | query};
 
 fact = subject "-" relation "-" object ".";
-subject = STRING;
-relation = STRING;
-object = STRING;
+subject = string;
+relation = string;
+object = string;
+string = [a-z]+;
 
 rule = condition "=>" consequence "!";
-condition = rule_term "-" relation "-" rule_term;
+condition = rule_term "-" relation "-" rule_term {"&" rule_term "-" relation "-" rule_term};
 consequence = rule_term "-" relation "-" rule_term;
 
 query = queryTerm "-" queryTerm "-" queryTerm "?";
-queryTerm = STRING | "*";
+queryTerm = string | "*";
 ```
