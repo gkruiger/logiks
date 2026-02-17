@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test": "vitest"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.17",
+    "vitest": "^4.0.17"
+  }
+}
