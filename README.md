@@ -3,7 +3,7 @@
 An interpreted logic programming language for deriving facts from rules and querying relational knowledge.
 
 ![status](https://img.shields.io/badge/status-WIP-red)
-![tests](https://img.shields.io/badge/test--coverage-90%25-orange)
+![tests](https://img.shields.io/badge/test--coverage-100%25-orange)
 ![coverage](https://img.shields.io/badge/dependencies-none-green)
 
 Logiks is intentionally minimal.  

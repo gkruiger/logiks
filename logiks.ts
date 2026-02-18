@@ -18,6 +18,7 @@ export class Interpreter {
     for(let i=0; i<input.length; i++) {
 
       let tokens = Tokenize(input[i])
+      console.log(input[i], tokens.length)
       if(tokens.length == 0) continue 
       
       try{
@@ -30,7 +31,7 @@ export class Interpreter {
             object: ast.object.value
           })
 
-          output.push('Ok.')
+           output.push('Ok.')
         }
 
         if (ast.type === 'Query') {
@@ -57,12 +58,8 @@ export class Interpreter {
               if (ast.object.type === 'Wildcard') wildcardSlot = 'object'
 
               for(let fact of result) {           
-              if(numberofWildcards == 1) {           
-                if(wildcardSlot != null) {
-                  outputList.push(fact[wildcardSlot])
-                } else {
-                  throw new Error('Type of wildcard not supported.')
-                }
+              if(numberofWildcards == 1 && wildcardSlot != null) {           
+                outputList.push(fact[wildcardSlot])
               }
               if(numberofWildcards >= 2) {
                 outputList.push(`${fact.subject} - ${fact.relation} - ${fact.object}`) 
@@ -80,12 +77,11 @@ export class Interpreter {
       }
     }
 
-    if(output.length == 0) return 'Error: no input.'
     return output.join('\n')
   }
  
   formatList(items: string[]) : string {
-    if (items.length === 0) return 'No.'
+    if (items.length === 0) return 'No matches found.'
     if (items.length === 1) return items[0] + '.'
     if (items.length === 2) return `${items[0]} and ${items[1]}.`
 
@@ -104,7 +100,7 @@ type FactTerm   = { type: 'FactTerm', value: string }
 type QueryNode  = { type: 'Query', subject: QueryTerm, relation: QueryTerm, object: QueryTerm }
 type QueryTerm  = { type: 'Wildcard' } | { type: 'QueryTerm', value: string }
 
-type ParsedTerm = { type: 'Wildcard' } | { type: 'Term', value: string }
+type ParsedTerm = { type: 'Term', value: string } | { type: 'Wildcard' } | { type: 'Variable', value: string }
 
 class Parser {
   private tokens: Token[] = []
@@ -115,10 +111,6 @@ class Parser {
     this.position = 0
 
     const statement = this.parseStatement()
-
-    if (!this.isAtEnd()) {
-      throw new Error('unexpected token after statement.')
-    }
 
     return statement
   }
@@ -134,48 +126,73 @@ class Parser {
 
     if(this.check(TokenIDs.DOT)) {
       this.consume(TokenIDs.DOT, `expected '.' after object.`)
-
-      if (!this.isAtEnd()) {
-        throw new Error('unexpected token after fact.')
-      }
-    
-      if (subject.type == 'Wildcard') throw new Error('wildcards are not allowed in facts.')
-      if (relation.type == 'Wildcard') throw new Error('wildcards are not allowed in facts.')
-      if (object.type == 'Wildcard') throw new Error('wildcards are not allowed in facts.')
-
-      return {
-        type: 'Fact',
-        subject: { type: 'FactTerm', value: subject.value },
-        relation: { type: 'FactTerm', value: relation.value },
-        object: { type: 'FactTerm', value: object.value }
-      }
+      return this.parseFact(subject, relation, object)
     } else if(this.check(TokenIDs.QUESTION_MARK)) {
       this.consume(TokenIDs.QUESTION_MARK, `expected '?' after object.`)
-
-      if (!this.isAtEnd()) {
-        throw new Error('unexpected token after query.')
-      }
-
-      const returnedQuery: QueryNode ={
-        type: 'Query',
-        subject: subject.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: subject.value },
-        relation: relation.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: relation.value },
-        object: object.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: object.value }
-      }
-
-      return returnedQuery
+      return this.parseQuery(subject, relation, object)
     } else {
-      throw new Error(`expected '.' or '?' after object.`)
+      throw new Error(`expected '.', '!' or '?' after object.`)
     }
   }
 
   parseFactOrQueryTerm(message: string) : ParsedTerm {
-    if (this.check(TokenIDs.STAR)) {
-      this.consume(TokenIDs.STAR, "expected '*'.")
-      return { type: 'Wildcard' }
-    } else {
+    if (this.check(TokenIDs.STRING)) {
       const token = this.consume(TokenIDs.STRING, message)
       return { type: 'Term', value: token.value }      
+    } else if (this.check(TokenIDs.STAR)) {
+      this.consume(TokenIDs.STAR, "expected '*'.")
+      return { type: 'Wildcard' }
+    } else if (this.check(TokenIDs.SQUARE_BRACKET_OPEN)){
+      this.consume(TokenIDs.SQUARE_BRACKET_OPEN, "expected '<'.")
+      const token = this.consume(TokenIDs.STRING, 'expected varianble name after "<".')
+      this.consume(TokenIDs.SQUARE_BRACKET_CLOSE, "expected '>'.")
+      return { type: 'Variable', value: token.value }
+    } else {
+      throw new Error(message)
+    }
+  }
+
+  parseFact(subject: ParsedTerm, relation: ParsedTerm, object: ParsedTerm) : FactNode {
+    if (!this.isAtEnd()) {
+      throw new Error('unexpected token after fact.')
+    }
+  
+    if (
+      subject.type == 'Wildcard' ||
+      relation.type == 'Wildcard' ||
+      object.type == 'Wildcard'
+    ) throw new Error('wildcards are not allowed in facts.')
+
+    if (
+      subject.type == 'Variable' ||
+      relation.type == 'Variable' ||
+      object.type == 'Variable'
+    ) throw new Error('variables are not allowed in facts.')
+
+    return {
+      type: 'Fact',
+      subject: { type: 'FactTerm', value: subject.value },
+      relation: { type: 'FactTerm', value: relation.value },
+      object: { type: 'FactTerm', value: object.value }
+    }  
+  }
+
+  parseQuery(subject: ParsedTerm, relation: ParsedTerm, object: ParsedTerm) : QueryNode {
+    if (!this.isAtEnd()) {
+      throw new Error('unexpected token after query.')
+    }
+
+    if (
+      subject.type == 'Variable' ||
+      relation.type == 'Variable' ||
+      object.type == 'Variable'
+    ) throw new Error('variables are not allowed in queries.')
+
+    return {
+      type: 'Query',
+      subject: subject.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: subject.value },
+      relation: relation.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: relation.value },
+      object: object.type === 'Wildcard' ? { type: 'Wildcard' } : { type: 'QueryTerm', value: object.value }
     }
   }
 
@@ -218,7 +235,9 @@ const TokenIDs = {
   CONNECTOR: 2,
   DOT: 3,
   QUESTION_MARK: 4,
-  STAR: 5
+  STAR: 5,
+  SQUARE_BRACKET_OPEN: 6,
+  SQUARE_BRACKET_CLOSE: 7,
 } as const
 
 function Tokenize(input: string) : Token[] {
@@ -261,6 +280,18 @@ function Tokenize(input: string) : Token[] {
       processBuffer()
       tokens.push({
         id: TokenIDs.STAR,
+        value: '*'
+      })
+    } else if (input.charAt(i) === '<') {
+      processBuffer()
+      tokens.push({
+        id: TokenIDs.SQUARE_BRACKET_OPEN,
+        value: '*'
+      })
+    } else if (input.charAt(i) === '>') {
+      processBuffer()
+      tokens.push({
+        id: TokenIDs.SQUARE_BRACKET_CLOSE,
         value: '*'
       })
     } else {
@@ -316,10 +347,6 @@ class Engine {
   }
   
   addFact(fact: Fact) : void {
-    if(fact.subject.length == 0) throw new Error('Subject needs to be at least one character long.')
-    if(fact.relation.length == 0) throw new Error('Relation needs to be at least one character long.')
-    if(fact.object.length == 0) throw new Error('Object needs to be at least one character long.')
-
     this.facts.push({
       subject: fact.subject,
       relation: fact.relation,
@@ -328,8 +355,6 @@ class Engine {
   }
 
   getMatchingFacts(query: Query, previousQueries: Query[] = []) : Fact[] {
-    
-    console.log('Getting matching facts for query', query, 'with previous queries', previousQueries)
     
     let results: Fact[] = []
 
@@ -343,6 +368,7 @@ class Engine {
       } 
     }
     
+    /*
     if(previousQueries.some(previousQuery => 
       query.subject == previousQuery.subject &&
       query.relation == previousQuery.relation &&
@@ -359,27 +385,25 @@ class Engine {
         rule.consequence.relation == query.relation &&
         rule.consequence.object_variable
       ) {
-        console.log('Trying to apply rule with condition', rule.condition, 'and consequence', rule.consequence, 'to query', query)
         if(this.getMatchingFacts({
           subject: query.object,
           relation: rule.condition.relation,
           object: query.subject
         }, newPreviousQueries).length > 0) {
-          console.log('Rule applied!')
           results.push({
             subject: query.subject ?? '',
             relation: rule.consequence.relation ?? '',
             object: query.object ?? ''
           })
-        } else {
-          console.log('Rule could not be applied.')
         }
       }
     }
+    */
 
     return results
   }
 
+  /*
   addRule(condition: Condition, consequence: Consequence) : void {
     if(condition.subject_variable.length == 0) throw new Error('Subject variable of condition needs to be at least one character long.')
     if(condition.relation.length == 0) throw new Error('Relation of condition needs to be at least one character long.')
@@ -415,4 +439,5 @@ class Engine {
       }
     })
   }
+  */
 }
