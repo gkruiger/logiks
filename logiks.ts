@@ -50,7 +50,7 @@ export class Interpreter {
           
           if(numberofWildcards === 0) {
             output.push(result.length > 0 ? 'Yes.' : 'No.')
-          } else if(numberofWildcards > 0) {
+          } else {
               let wildcardSlot: 'subject' | 'relation' | 'object' | null = null
 
               if (ast.subject.type === 'Wildcard') wildcardSlot = 'subject'
