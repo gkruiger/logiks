@@ -1,75 +1,6 @@
 import { expect, describe, test, beforeEach } from 'vitest'
 import { Interpreter } from './logiks.js'
 
-/*
-
-  describe(`Add rule`, () => {
-    
-    beforeEach(() => {
-      expect(() => engine.addFact({subject: `Elizabeth`, relation: `married to`, object: `Charles`})).not.toThrow()
-    })
-    
-    describe(`Invalid rule`, () => {
-      test(`Empty value`, () => {
-        expect(() => engine.addRule({subject_variable: ``, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE`})).toThrow(/Subject variable of condition needs to be at least one character long./)
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: ``, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE`})).toThrow(/Relation of condition needs to be at least one character long./)
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: ``}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE`})).toThrow(/Object variable of condition needs to be at least one character long./)
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: ``, relation: `married to`, object_variable: `SOMEONE`})).toThrow(/Subject variable of consequence needs to be at least one character long./)
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: ``, object_variable: `SOMEONE`})).toThrow(/Relation of consequence needs to be at least one character long./)
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: ``})).toThrow(/Object variable of consequence needs to be at least one character long./)
-      })
-
-      test(`Wrong format`, () => {
-        //expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE_ELSE_ENTIRELY`})).toThrow(/Subject variable of condition and object variable of consequence need to be the same./)
-        //expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE_ENTIRELY`, relation: `married to`, object_variable: `SOMEONE`})).toThrow(/Object variable of condition and subject variable of consequence need to be the same./)
-      })
-    })
-
-    describe(`Valid rule`, () => {
-      test(`A - r - B => B - r - A`, () => {
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE`})).not.toThrow()
-      })
-      test(`A - r1 - B => B - r2 - A`, () => {
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `father of`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `child of`, object_variable: `SOMEONE`})).not.toThrow()
-      })
-      test(`A - r1 - B => A - r2 - B`, () => {
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `father of`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE`, relation: `parent of`, object_variable: `SOMEONE_ELSE`})).not.toThrow()
-      })
-    })
-    
-    describe(`Apply rules`, () => {
-      describe(`No rules`, () => {
-        test(`Relation one way, is also the relation the other way around.`, () => {
-        })
-        test(`Bi-directional`, () => {
-        })
-      })
-
-      beforeEach(() => {
-        expect(() => engine.addFact({subject: `Elizabeth`, relation: `married to`, object: `Charles`})).not.toThrow()
-        expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `married to`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `married to`, object_variable: `SOMEONE`})).not.toThrow()
-      })
-
-      test(`No matches`, () => {
-        expect(engine.getMatchingFacts({subject: `William`, relation: `married to`, object: `Elizabeth`})).toStrictEqual([])
-        expect(engine.getMatchingFacts({subject: `Charles`, relation: `friends with`, object: `Elizabeth`})).toStrictEqual([])
-        expect(engine.getMatchingFacts({subject: `Charles`, relation: `married to`, object: `Sarah`})).toStrictEqual([])
-      })
-
-      test(`Match`, () => {
-        expect(engine.getMatchingFacts({subject: `Charles`, relation: `married to`, object: `Elizabeth`})).toStrictEqual([{subject: `Charles`, relation: `married to`, object: `Elizabeth`}])
-      })
-    })
-
-    test(`Having fun.... :-)`, () => {
-      expect(() => engine.addFact({subject: `ZGV`, relation: `father of`, object: `Jasper`})).not.toThrow()
-      expect(() => engine.addRule({subject_variable: `SOMEONE`, relation: `father of`, object_variable: `SOMEONE_ELSE`}, {subject_variable: `SOMEONE_ELSE`, relation: `child of`, object_variable: `SOMEONE`})).not.toThrow()
-      expect(engine.getMatchingFacts({subject: `Jasper`, relation: `child of`, object: `ZGV`})).toStrictEqual([{subject: `Jasper`, relation: `child of`, object: `ZGV`}])
-     })
-  })
-})
-*/
-
 describe(`Interpreter`, () => {
   
   let interpreter = new Interpreter()
@@ -94,19 +25,22 @@ describe(`Interpreter`, () => {
         expect(interpreter.process([`Elizabeth -  - Charles.`])).toBe(`Error parsing line 1: relation expected after '-'.`)
         expect(interpreter.process([`Elizabeth - mother Charles.`])).toBe(`Error parsing line 1: '-' expected after relation.`)       
         expect(interpreter.process([`Elizabeth - mother - .`])).toBe(`Error parsing line 1: object expected after '-'.`)  
-        expect(interpreter.process([`Elizabeth - mother - Charles`])).toBe(`Error parsing line 1: expected '.', '!' or '?' after object.`)  
+        expect(interpreter.process([`Elizabeth - mother - Charles`])).toBe(`Error parsing line 1: expected '.', '=>' or '?' after object.`)  
       })
       test('Something after the fact', () => {
         expect(interpreter.process([`Elizabeth - mother - Charles. Elizabeth`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
         expect(interpreter.process([`Elizabeth - mother - Charles. -`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
         expect(interpreter.process([`Elizabeth - mother - Charles. .`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
+        expect(interpreter.process([`Elizabeth - mother - Charles. !`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
+        expect(interpreter.process([`Elizabeth - mother - Charles. ?`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
+        expect(interpreter.process([`Elizabeth - mother - Charles. <A>`])).toBe(`Error parsing line 1: unexpected token after fact.`)  
       })
-      test('Uing a wildcard.', () => {
+      test('Using a wildcard.', () => {
         expect(interpreter.process([`* - mother - Charles.`])).toBe(`Error parsing line 1: wildcards are not allowed in facts.`)  
         expect(interpreter.process([`Elizabeth - * - Charles.`])).toBe(`Error parsing line 1: wildcards are not allowed in facts.`)  
         expect(interpreter.process([`Elizabeth - mother - *.`])).toBe(`Error parsing line 1: wildcards are not allowed in facts.`)  
       })
-      test('Uing a variable.', () => {
+      test('Using a variable.', () => {
         expect(interpreter.process([`<Elizabeth> - mother - Charles.`])).toBe(`Error parsing line 1: variables are not allowed in facts.`)  
         expect(interpreter.process([`Elizabeth - <mother> - Charles.`])).toBe(`Error parsing line 1: variables are not allowed in facts.`)  
         expect(interpreter.process([`Elizabeth - mother - <Charles>.`])).toBe(`Error parsing line 1: variables are not allowed in facts.`)  
@@ -119,6 +53,59 @@ describe(`Interpreter`, () => {
     })
   })
 
+  describe(`Add rule`, () => {
+    describe(`Invalid rules`, () => {
+      test(`Missing elements`, () => {
+        expect(interpreter.process([` - mother - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: subject expected.`)
+        expect(interpreter.process([`<A>  mother - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: '-' expected after subject.`)
+        expect(interpreter.process([`<A> -  - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: relation expected after '-'.`)
+        expect(interpreter.process([`<A> - mother  <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: '-' expected after relation.`)
+        expect(interpreter.process([`<A> - mother -  => <B> - child - <A>!`])).toBe(`Error parsing line 1: object expected after '-'.`)
+        expect(interpreter.process([`<A> - mother - <B>  <B> - child - <A>!`])).toBe(`Error parsing line 1: expected '.', '=>' or '?' after object.`)
+        expect(interpreter.process([`<A> - mother - <B> => - child - <A>!`])).toBe(`Error parsing line 1: subject expected after '=>'.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B>  child - <A>!`])).toBe(`Error parsing line 1: '-' expected after subject.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> -  - <A>!`])).toBe(`Error parsing line 1: relation expected after '-'.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child  <A>!`])).toBe(`Error parsing line 1: '-' expected after relation.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - !`])).toBe(`Error parsing line 1: object expected after '-'.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>`])).toBe(`Error parsing line 1: '!' expected after object.`)
+      })
+      test('Using a wildcard.', () => {
+        expect(interpreter.process([`* - mother - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+        expect(interpreter.process([`<A> - * - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+        expect(interpreter.process([`<A> - mother - * => <B> - child - <A>!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+        expect(interpreter.process([`<A> - mother - <B> => * - child - <A>!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - * - <A>!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - *!`])).toBe(`Error parsing line 1: wildcards are not allowed in rules.`)
+      })
+      test('Something after the rule', () => {
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! C`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! <C>`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! -`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! .`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! !`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - child - <A>! ?`])).toBe(`Error parsing line 1: unexpected token after rule.`)
+      })
+      test('Using variables wrong.', () => {
+        expect(interpreter.process([`<A> - <R> - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: relation's as variables are not allow rules.`)
+        expect(interpreter.process([`<A> - mother - <B> => <B> - <R> - <A>!`])).toBe(`Error parsing line 1: relation's as variables are not allow rules.`)
+        expect(interpreter.process([`A - R - <B> => <B> - child - <A>!`])).toBe(`Error parsing line 1: subject can't be a term and should be a variable.`) 
+        expect(interpreter.process([`<A> - R - B => <B> - child - <A>!`])).toBe(`Error parsing line 1: object can't be a term and should be a variable.`) 
+        expect(interpreter.process([`<A> - R - <B> => B - child - <A>!`])).toBe(`Error parsing line 1: subject can't be a term and should be a variable.`) 
+        expect(interpreter.process([`<A> - R - <B> => <B> - child - A!`])).toBe(`Error parsing line 1: object can't be a term and should be a variable.`) 
+        expect(interpreter.process([`<A> - R - <B> => <A> - child - <A>!`])).toBe(`Error parsing line 1: variables in condition and consequence do not match.`) 
+        expect(interpreter.process([`<A> - R - <B> => <B> - child - <B>!`])).toBe(`Error parsing line 1: variables in condition and consequence do not match.`) 
+        expect(interpreter.process([`<A> - R - <B> => <C> - child - <A>!`])).toBe(`Error parsing line 1: variables in condition and consequence do not match.`) 
+        expect(interpreter.process([`<A> - R - <B> => <B> - child - <C>!`])).toBe(`Error parsing line 1: variables in condition and consequence do not match.`) 
+      })
+    })
+    describe(`Valid rules`, () => {
+      test('Single condition.', () => {
+      })
+      test('Multiple conditions.', () => {
+      })
+    })
+  })
+
   describe(`Query facts`, () => {
     describe(`Invalid queries`, () => {
       test('Missing an element', () => {
@@ -127,14 +114,14 @@ describe(`Interpreter`, () => {
         expect(interpreter.process([`Elizabeth -  - Charles?`])).toBe(`Error parsing line 1: relation expected after '-'.`)
         expect(interpreter.process([`Elizabeth - mother Charles?`])).toBe(`Error parsing line 1: '-' expected after relation.`)
         expect(interpreter.process([`Elizabeth - mother - ?`])).toBe(`Error parsing line 1: object expected after '-'.`)
-        expect(interpreter.process([`Elizabeth - mother - Charles`])).toBe(`Error parsing line 1: expected '.', '!' or '?' after object.`)  
+        expect(interpreter.process([`Elizabeth - mother - Charles`])).toBe(`Error parsing line 1: expected '.', '=>' or '?' after object.`)  
       })
       test('Something after the query', () => {
         expect(interpreter.process([`Elizabeth - mother - Charles? Elizabeth`])).toBe(`Error parsing line 1: unexpected token after query.`)  
         expect(interpreter.process([`Elizabeth - mother - Charles?. -`])).toBe(`Error parsing line 1: unexpected token after query.`)  
         expect(interpreter.process([`Elizabeth - mother - Charles?. .`])).toBe(`Error parsing line 1: unexpected token after query.`)  
       })
-      test('Uing a variable.', () => {
+      test('Using a variable.', () => {
         expect(interpreter.process([`<Elizabeth> - mother - Charles?`])).toBe(`Error parsing line 1: variables are not allowed in queries.`)  
         expect(interpreter.process([`Elizabeth - <mother> - Charles?`])).toBe(`Error parsing line 1: variables are not allowed in queries.`)  
         expect(interpreter.process([`Elizabeth - mother - <Charles>?`])).toBe(`Error parsing line 1: variables are not allowed in queries.`)  
@@ -215,4 +202,5 @@ describe(`Interpreter`, () => {
     })
 
   })
+
 })

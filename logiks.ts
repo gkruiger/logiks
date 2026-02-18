@@ -18,7 +18,6 @@ export class Interpreter {
     for(let i=0; i<input.length; i++) {
 
       let tokens = Tokenize(input[i])
-      console.log(input[i], tokens.length)
       if(tokens.length == 0) continue 
       
       try{
@@ -32,6 +31,12 @@ export class Interpreter {
           })
 
            output.push('Ok.')
+        }
+
+        if (ast.type === 'Rule') {
+          // TODO
+
+          output.push('Ok.')
         }
 
         if (ast.type === 'Query') {
@@ -94,11 +99,15 @@ export class Interpreter {
   }
 }
 
-type ASTNode    = FactNode | QueryNode
-type FactNode   = { type: 'Fact', subject: FactTerm, relation: FactTerm, object: FactTerm }
-type FactTerm   = { type: 'FactTerm', value: string }
-type QueryNode  = { type: 'Query', subject: QueryTerm, relation: QueryTerm, object: QueryTerm }
-type QueryTerm  = { type: 'Wildcard' } | { type: 'QueryTerm', value: string }
+type ASTNode          = FactNode | QueryNode | RuleNode
+type FactNode         = { type: 'Fact', subject: FactTerm, relation: FactTerm, object: FactTerm }
+type FactTerm         = { type: 'FactTerm', value: string }
+type QueryNode        = { type: 'Query', subject: QueryTermNode, relation: QueryTermNode, object: QueryTermNode }
+type QueryTermNode    = { type: 'Wildcard' } | { type: 'QueryTerm', value: string }
+type RuleNode         = { type: 'Rule', condition: ConditionNode, consequence: ConsequenceNode }
+type ConditionNode    = { subject: RuleTermNode, relation: RuleTermNode, object: RuleTermNode }
+type ConsequenceNode  = { subject: RuleTermNode, relation: RuleTermNode, object: RuleTermNode }
+type RuleTermNode     = { type: 'RuleTerm', value: string } | { type: 'Variable', value: string }
 
 type ParsedTerm = { type: 'Term', value: string } | { type: 'Wildcard' } | { type: 'Variable', value: string }
 
@@ -116,13 +125,13 @@ class Parser {
   }
 
   parseStatement() : ASTNode {
-    const subject = this.parseFactOrQueryTerm('subject expected.')
+    const subject = this.parseFactOrQueryOrRuleTerm('subject expected.')
     this.consume(TokenIDs.CONNECTOR, "'-' expected after subject.")
 
-    const relation = this.parseFactOrQueryTerm(`relation expected after '-'.`)
+    const relation = this.parseFactOrQueryOrRuleTerm(`relation expected after '-'.`)
     this.consume(TokenIDs.CONNECTOR, "'-' expected after relation.")
 
-    const object = this.parseFactOrQueryTerm(`object expected after '-'.`)
+    const object = this.parseFactOrQueryOrRuleTerm(`object expected after '-'.`)
 
     if(this.check(TokenIDs.DOT)) {
       this.consume(TokenIDs.DOT, `expected '.' after object.`)
@@ -130,12 +139,15 @@ class Parser {
     } else if(this.check(TokenIDs.QUESTION_MARK)) {
       this.consume(TokenIDs.QUESTION_MARK, `expected '?' after object.`)
       return this.parseQuery(subject, relation, object)
-    } else {
-      throw new Error(`expected '.', '!' or '?' after object.`)
+    } else if(this.check(TokenIDs.ARROW)) {
+      this.consume(TokenIDs.ARROW, `expected '=>' after object.`)
+      return this.parseRule(subject, relation, object)
+    } else{
+      throw new Error(`expected '.', '=>' or '?' after object.`)
     }
   }
 
-  parseFactOrQueryTerm(message: string) : ParsedTerm {
+  parseFactOrQueryOrRuleTerm(message: string) : ParsedTerm {
     if (this.check(TokenIDs.STRING)) {
       const token = this.consume(TokenIDs.STRING, message)
       return { type: 'Term', value: token.value }      
@@ -196,6 +208,73 @@ class Parser {
     }
   }
 
+  parseRule(subject: ParsedTerm, relation: ParsedTerm, object: ParsedTerm) : RuleNode {
+       
+    if (
+      subject.type == 'Wildcard' ||
+      relation.type == 'Wildcard' ||
+      object.type == 'Wildcard'
+    ) throw new Error('wildcards are not allowed in rules.')
+
+    if(subject.type == 'Term') throw new Error(`subject can't be a term and should be a variable.`)
+    if(relation.type == 'Variable') throw new Error(`relation's as variables are not allow rules.`)
+    if(object.type == 'Term') throw new Error(`object can't be a term and should be a variable.`)
+
+    let condition: ConditionNode
+    
+    condition = {
+      subject: subject.type === 'Variable' ? { type: 'Variable', value: subject.value } : { type: 'RuleTerm', value: subject.value },
+      relation: { type: 'RuleTerm', value: relation.value },
+      object: object.type === 'Variable' ? { type: 'Variable', value: object.value } : { type: 'RuleTerm', value: object.value }
+    }
+
+    console.log(this.tokens.map(token => token.value).join(''))
+
+    subject = this.parseFactOrQueryOrRuleTerm(`subject expected after '=>'.`)
+    if(subject.type == 'Wildcard') throw new Error('wildcards are not allowed in rules.')
+    if(subject.type == 'Term') throw new Error(`subject can't be a term and should be a variable.`)
+    this.consume(TokenIDs.CONNECTOR, "'-' expected after subject.")
+   
+    relation = this.parseFactOrQueryOrRuleTerm(`relation expected after '-'.`)
+    if(relation.type == 'Wildcard') throw new Error('wildcards are not allowed in rules.')
+    if(relation.type == 'Variable') throw new Error(`relation's as variables are not allow rules.`)
+
+    this.consume(TokenIDs.CONNECTOR, "'-' expected after relation.")
+
+    object = this.parseFactOrQueryOrRuleTerm(`object expected after '-'.`)
+    if(object.type == 'Wildcard') throw new Error('wildcards are not allowed in rules.')
+    if(object.type == 'Term') throw new Error(`object can't be a term and should be a variable.`)
+    
+    let consequence: ConsequenceNode
+
+    consequence = {
+      subject: subject.type === 'Variable' ? { type: 'Variable', value: subject.value } : { type: 'RuleTerm', value: subject.value },
+      relation: { type: 'RuleTerm', value: relation.value },
+      object: object.type === 'Variable' ? { type: 'Variable', value: object.value } : { type: 'RuleTerm', value: object.value }
+    } 
+
+    if(
+      !(condition.object.value == consequence.object.value ||
+      condition.object.value == consequence.subject.value) ||
+      !(condition.subject.value == consequence.object.value ||
+      condition.subject.value == consequence.object.value)
+    ) {
+      throw new Error('variables in condition and consequence do not match.')
+    }
+
+    this.consume(TokenIDs.EXCLAMATION_MARK, "'!' expected after object.")
+
+    if (!this.isAtEnd()) {
+      throw new Error('unexpected token after rule.')
+    }
+
+    return {
+      type: 'Rule',
+      condition: condition,
+      consequence: consequence
+    }
+  }
+
   consume(type: TokenID, message: string) : Token {
     if(
       !this.isAtEnd() &&
@@ -238,6 +317,8 @@ const TokenIDs = {
   STAR: 5,
   SQUARE_BRACKET_OPEN: 6,
   SQUARE_BRACKET_CLOSE: 7,
+  ARROW: 8,
+  EXCLAMATION_MARK: 9,
 } as const
 
 function Tokenize(input: string) : Token[] {
@@ -286,14 +367,27 @@ function Tokenize(input: string) : Token[] {
       processBuffer()
       tokens.push({
         id: TokenIDs.SQUARE_BRACKET_OPEN,
-        value: '*'
+        value: '<'
       })
     } else if (input.charAt(i) === '>') {
       processBuffer()
       tokens.push({
         id: TokenIDs.SQUARE_BRACKET_CLOSE,
-        value: '*'
+        value: '>'
       })
+    } else if (input.slice(i, i+2) === '=>') {
+      processBuffer()
+      tokens.push({
+        id: TokenIDs.ARROW,
+        value: '=>'
+      })
+      i++
+    } else if (input.charAt(i) === '!') {
+      processBuffer()
+      tokens.push({
+        id: TokenIDs.EXCLAMATION_MARK,
+        value: '!'
+      }) 
     } else {
       buffer += input.charAt(i)
     }
