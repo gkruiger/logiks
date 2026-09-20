@@ -1,285 +1,178 @@
-# Introduction
-
-An interpreted logic programming language for deriving facts from rules and querying relational knowledge.
-
 ![status](https://img.shields.io/badge/status-WIP-red)
-![tests](https://img.shields.io/badge/test--coverage-100%25-orange)
-![coverage](https://img.shields.io/badge/dependencies-none-green)
+![tests-coverage](https://img.shields.io/badge/test--coverage-tbd%25-orange)
+![dependencies](https://img.shields.io/badge/dependencies-none-green)
 
-Logiks is intentionally minimal.  
-It focuses on relational reasoning without arithmetic, negation, or side effects.  
-The language is designed to be readable by non-programmers, while remaining easy to embed in TypeScript applications.  
-It favors explicit syntax and predictable evaluation over performance optimizations.
+# Logiks
+Logiks is a simple logic programming language for solving logic puzzles.
+
+Its design principles are simplicity and ease of use.
 
 ## Example
 
-The traditional example (https://en.wikipedia.org/wiki/Logic_programming) of relational logic
-
 ```ts
-let output = interpreter.process([
-  'Elizabeth - mother - Charles.',
-  'Charles - father - William.',
-  'Charles - father - Harry.',
-
-  '<A> - father - <B> => <A> - parent - <B>!',
-  '<A> - mother - <B> => <A> - parent - <B>!',
-  '<A> - parent - <B> & <B> - parent - <C> => <A> - grandparent - <C>!',
-
-  'Elizabeth - grandparent - *?'
-])
-
-console.log(output)
-// Expected output: [
-//   'William and Harry.'
-// ]
+console.log(engine.process('
+  A = TRUE. 
+  A XOR B = TRUE. 
+  B?'
+))
+// Expected output: false
 ```
+
+TODO: Make this example more compelling once propositional logic is fully supported.
 
 ## Getting started
-
-Import the Logiks interpreter:
-
-```ts
-import { Interpreter } from './logiks.js'
+Copy the Logiks files into your TypeScript project:
+```
+engine.ts
+parser.ts
+tokenizer.ts
+types.ts
 ```
 
-Create a new instance of the Interpreter:
+Import and create the engine:
 
 ```ts
-let interpreter = new Interpreter()
+import { Engine } from './engine.js'
+
+const engine = new Engine()
 ```
 
-The interpreter accepts an array of strings as input and returns a list of strings as output:
+Process Logiks input:
 
 ```ts
-let output = interpreter.process([
-  'Elizabeth - mother - Charles.',
-  'Elizabeth - mother - William.',
-  '<A> - mother - <B> => <A> - parent - <B>!',
-  'Elizabeth - parent - *?',
-])
-// output = [
-  'Charles and William.'
-]
+console.log(engine.process('A = TRUE. A?'))
+// true
 ```
 
-# Usage
+## Usage
 
-Logiks provides the following two methods:
+The engine provides two methods: process() and reset().
 
-### process(input: string[]): string[]
-
-
+### process(input: string | string[]): NullableBoolean | NullableBoolean[]
+Processes the input sequentially and returns the result of each query. Input can be provided as a string or an array of strings.
 ```ts
-let output = interpreter.process([
-  'Elizabeth - mother - Charles.',
-  'Elizabeth - mother - William.',
-  '<A> - mother - <B> => <A> - parent - <B>!',
-  'Elizabeth - parent - Jimmy?',
-  'Elizabeth - parent - *?',
-  '* - parent - *?',
-])
-// output = [
-  'No.',
-  'Charles and William.',
-  'Elizabeth - parent - Charles and Elizabeth - parent - William.'
-]
-```
+let output = engine.process('A = TRUE. A XOR B = TRUE. B?') 
+// false
 
-The interpreter processes the input one by one, and returns one string for each query, resulting in an array of strings as the total output. The order of the output matches the order of the queries.
+let output = engine.process([
+  'A = TRUE.',
+  'A XOR B = TRUE.',
+  'A?',
+  'B?'
+]) 
+// [true, false]
+```
+Evaluation of the inputs is sequential. Later assignment changes it:
+```ts
+let output = engine.process('
+  A = TRUE. 
+  A?
+  A = FALSE.
+  A?
+')
+// Expected output: [true, false]
+```
+Errors stop further evaluation and are thrown:
+```ts
+let output = engine.process('
+  A = TRUE.
+  Uh-oh!
+  A?
+')
+// Error: ...
+```
 
 ### reset(): void
-
+The reset function erases any information that is fed the engine upt to that point. So:
 ```ts
-interpreter.reset()
+let output = engine.process('A?')         // output: undefined
+output = engine.process('A = TRUE. A?')   // output: true
+engine.reset()
+output = egine.process('A?')              // output: undefined
 ```
 
-The interpreter resets by clearing all previously stored facts and rules.
+## Language 
 
+### Three-valued logic
+Logiks distinguishes three possible truth values (and it's JS expression):
+- TRUE     → true
+- FALSE    → false
+- UNKNOWN  → undefined
 
-# Interpreter specifications
+UNKNOWN means that Logiks cannot determine whether something is true or false. See [Queries](#queries) for more information.
 
-The next sections explain the inner workings of the interpreter.
+### Propositional logic
+Logiks currently supports propositional logic. Statements have a truth value and can be queried.
 
-## Overview
-The Logiks interpreter works in a simple loop:
-- While there is another line of input:
-  - Evaluate the line of input
-  - If the statement produces output, append it to the result list
-- Return all output
-
-Errors during evaluation result in halting the program and returning the error as output.
-
-Every line of input is either one of the three basic building blocks of Logiks:  
-- Facts
-- Rules
-- Queries
-
-Facts and rules don't result in output, only queries do.
-
-## Fact
-A fact defines a relation between two elements.
-
-**Syntax**
+#### Statemement
+A statement assigns a truth value to a variable.
 ```
-<subject> - <relation> - <object>.
+A = TRUE
+B = FALSE
+C = T
+D = F
 ```
-**Example**
-```ts
-let output = interpreter.process([
-  'Elizabeth - mother - Charles.',
-  'Charles - father - William.', 
-  'Charles - married - Elizabeth.'
-])
+Logiks doesn't accept UNKNOWN in a statement.
 
-console.log(output)
-// Expected output: []
+##### Variables
+Variables can contain any characters except =, . and ?. 
+
+Examples of valid variables:
 ```
-The identifiers need to be separated by a `-` and the fact has to end with a `.`
-Neither the subject, relation, nor object needs to be declared beforehand. Logiks doesn't allow duplicates in its knowledge base, so adding a fact that already exists, results in an error.
-
-Facts and rules are stored, and evaluated only during query execution.
-
-## Rule
-A rule derives new facts from known facts.
-
-**Syntax**
-```
-<condition> => <consequence>!
+A
+It'sRaining
+Logiks_is_awesome!
 ```
 
-**Example**
-```ts
-let output = interpreter.process([
-  'Elizabeth - mother - <SOMEONE> => Elizabeth - parent - <SOMEONE>!',
-  '<SOMEONE> - married - <SOMEONE_ELSE> => <SOMEONE_ELSE> - married - <SOMEONE>!',
-  '<A> - mother - <B> => <B> - child - <A>!'
-])
+##### Truth Values
+Logiks supports TRUE, FALSE and UNKNOWN. TRUE and FALSE can also be written as T and F. UNKNOWN cannot be used in statement, and is reserved for results for queries.
 
-console.log(output)
-// Expected output: []
+##### Operators
+Operators combine variables into formulas. Currently, only XOR is supported.
+
+```
+FriesAsASide XOR SaladAsASide = TRUE
 ```
 
-Both the condition and the consequence have to be in the form of a fact and need to be separated by the implication arrow `=>`. A rule has to end with a `!`. Logiks doesn't allow duplicates in its knowledge base, so adding a rule that already exists, results in an error.
+##### Consistency
+If the statement is not consistent with the previous statements, Logiks will throw an error:
 
-Variables are used to connect the condition and the consequence. Variables are enclosed by angle brackets: `<>`. Important constraints:
-- Each rule application uses fresh variable bindings. Variables are scoped to the rule in which they appear.
-- Only subjects and objects may be variables. A relation can't.
-- All variables used in the consequence must also appear in the condition.
-
-Rules are stored, but not applied to facts directly. This only happens when processing a query.
-
-## Query
-A query is used to ask questions.
-
-**Syntax**
 ```
-<subject | *> - <relation | *> - <object | *>?
+A XOR B = TRUE
+A = TRUE
+B = FALSE
 ```
 
-The `*` indicates the part you want to know.
+#### Queries
+A query asks Logiks to determine the truth value of a formula.
 
-**Example**
-```ts
-let output = interpreter.process([
-  'Elizabeth - grandparent - William?',
-  'Elizabeth - * - William?',
-  '* - grandparent - *?',
-  '* - * - *?',
-])
-
-console.log(output)
-// Expected output: []
+Example:
 ```
-The identifiers need to be separated by a `-` and the query has to end with a `?`.
-
-The response format depends on the number of * wildcards in the query:
-- No `*`: `Yes.` or `No.`.
-- One `*`: A list of matching values for that position.
-- Multiple `*`s: A list of matching facts.
-
-Results are returned in deterministic depth-first derivation order. 
-
-Results are formatted as human-readable strings. If multiple results are returned, they are formatted as a natural-language list:
-- One result: "A."
-- Two results: "A and B."
-- Three or more results: "A, B and C."
-
-The query `* - * - *?` basically means: tell me every relation you know.
-
-**Examples**
-
-```ts
-let output = interpreter.process([
-  'Elizabeth - mother - Charles.',
-  'Charles - father - William.',
-  'Charles - father - Harry.',
-
-  '<A> - father - <B> => <A> - parent - <B>!',
-  '<A> - mother - <B> => <A> - parent - <B>!',
-  '<A> - parent - <B> & <B> - parent - <C> => <A> - grandparent - <C>!',
-
-  'Elizabeth - grandparent - William?',
-  'Elizabeth - * - William?',
-  '* - grandparent - *?',
-  '* - * - *?',
-])
-
-console.log(output)
-/* 
-Expected output: [
-  'Yes.',
-  'grandparent.',
-  'Elizabeth - grandparent - William and Elizabeth - grandparent - Harry.',
-  'Elizabeth - mother - Charles, Elizabeth - parent - Charles, Charles - father - William, Charles - parent - William, Elizabeth - grandparent - William, Charles - father - Harry, Charles - parent - Harry and Elizabeth - grandparent - Harry.',
-]
+A = TRUE
+A XOR B = TRUE
+A? 
+B?
+C? 
 ```
+will result in:
+```
+[true, false, undefined]
+```
+because Logiks can find a truth value for A via the statement A = TRUE, B by combining A = TRUE and A XOR B = TRUE, but, but cannot for C.
 
-As the example shows, the order of the output aligns with the order of the queries. Duplicate matches within a single query result are removed before formatting.
+### Syntax
+If there are multiple statements or queries in the same line, the statement needs to end with a dot '.' to mark the end of the statemet. If not, usage of a dot is optional.
 
-## Evaluation method
-Logiks uses goal-directed backward chaining.
-
-Facts and rules are stored.
-
-When a query is executed:
-- The query is matched against known facts.
-- Rules whose consequences match the query are selected.
-- Their conditions are evaluated recursively as subqueries.
-- Derived matches are collected and returned.
-
-Evaluation proceeds depth-first.
-
-Derived facts are not stored.
-
-To prevent infinite recursion caused by cyclic rules, Logiks memoizes subqueries within the scope of a single top-level query. If a subquery has already been evaluated, rule expansion is skipped and only known facts are considered.
-
-## Special characters
-Logiks is case-sensitive.
-
-| Character | Usage                                                                                  |
-| --------- | -------------------------------------------------------------------------------------- |
-| `-`       | Separates subject, relation, and object                                                |
-| `.`       | Ends a fact                                                                              |
-| `!`       | Ends a rule                                                                            |
-| `?`       | Ends a query                                                                           |
-| `#`       | Starts a comment (rest of the line is ignored). <br>Multi-line comments are not supported. |
-| `< >`     | Marks a variable                                                                       |
-
+A query always needs to end with a question mark '?'.
 
 ## Status
-In its current state, it supports relational logic at a very basic level.
+Logiks is work in progress. Different types of logic systems will be supported. For now, Logiks supports only propositional logic in its most basic form. To support propositional logic fully, there is still stuff to do:
+- Support for all operators: AND, OR, NOT, IMP and EQU
+- Establish operator precedence
+- Support us of brackets
 
-Implemented:
-- Adding facts
-- Adding rules
-- Evaluating queries
-
-Future ideas:
-- Support constraint logic
-- Support set theory
-
-# Test
-Tests are included (using `vitest`), to run the test:
+## Test
+Tests are included. To run the tests:
 ```
 npm run test
 ```
@@ -287,23 +180,14 @@ npm run test
 ## Grammar (EBNF)
 
 ```ebnf
-program = { statement };
+program = { statement | query };
 
-statement = fact | rule | query;
+statement = formula "=" truth_value ["."];
+query = formula "?";
 
-fact = subject "-" relation "-" object ".";
-subject = string;
-relation = string;
-object = string;
-string = [A-Za-z_]+;
+formula = variable | xorFormula;
+variable = string;
+xorFormula = formula 'xor' formula;
 
-rule = conditions "=>" consequence "!";
-conditions = condition {"&" condition};
-condition = rule_term "-" relation "-" rule_term;
-consequence = rule_term "-" relation "-" rule_term;
-rule_term = string | variable;
-variable = "<" string ">";
-
-query = queryTerm "-" queryTerm "-" queryTerm "?";
-queryTerm = string | "*";
+truth_value = TRUE | T | FALSE | F | UNKNOWN | U;
 ```
