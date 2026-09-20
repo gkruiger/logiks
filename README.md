@@ -93,14 +93,6 @@ output = egine.process('A?')              // output: undefined
 
 ## Language 
 
-### Three-valued logic
-Logiks distinguishes three possible truth values (and it's JS expression):
-- TRUE     → true
-- FALSE    → false
-- UNKNOWN  → undefined
-
-UNKNOWN is only used as a query result, and can't be used in statements.
-
 ### Propositional logic
 Logiks currently supports propositional logic. Statements have a truth value and can be queried.
 
@@ -112,7 +104,6 @@ B = FALSE
 C = T
 D = F
 ```
-Logiks doesn't accept UNKNOWN in a statement.
 
 ##### Variables
 Variables can contain any characters except =, . and ?. 
@@ -125,7 +116,7 @@ Logiks_is_awesome!
 ```
 
 ##### Truth Values
-Logiks supports TRUE, FALSE and UNKNOWN. TRUE and FALSE can also be written as T and F. UNKNOWN cannot be used in statement, and is reserved for results for queries.
+Logiks supports TRUE, FALSE and can also be written as T and F.
 
 ##### Operators
 Operators combine variables into formulas. Currently, only XOR is supported.
