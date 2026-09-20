@@ -73,7 +73,7 @@ export type NullableBoolean = typeof NullableBooleans[keyof typeof NullableBoole
 
 export type ASTNode = StatementNode | QueryNode
 
-export type StatementNode = {type: 'statement', formula: FormulaNode, truthValue: NullableBoolean}
+export type StatementNode = {type: 'statement', formula: FormulaNode, truthValue: boolean}
 export type QueryNode = {type: 'query', formula: FormulaNode}
 
 export type FormulaNode = 

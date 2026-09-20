@@ -99,7 +99,7 @@ Logiks distinguishes three possible truth values (and it's JS expression):
 - FALSE    → false
 - UNKNOWN  → undefined
 
-UNKNOWN means that Logiks cannot determine whether something is true or false. See [Queries](#queries) for more information.
+UNKNOWN is only used as a query result, and can't be used in statements.
 
 ### Propositional logic
 Logiks currently supports propositional logic. Statements have a truth value and can be queried.
@@ -182,12 +182,11 @@ npm run test
 ```ebnf
 program = { statement | query };
 
-statement = formula "=" truth_value ["."];
+statement = formula "=" (true | false) ["."];
 query = formula "?";
 
-formula = variable | xorFormula;
+formula = variable | xorFormula | andFormula;
 variable = string;
 xorFormula = formula 'xor' formula;
-
-truth_value = TRUE | T | FALSE | F | UNKNOWN | U;
+andFormula = formula 'and' formula;
 ```
