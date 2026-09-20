@@ -83,12 +83,12 @@ let output = engine.process('
 ```
 
 ### reset(): void
-The reset function erases any information that is fed the engine upt to that point. So:
+The reset function erases any information that is fed the engine up to that point. So:
 ```ts
 let output = engine.process('A?')         // output: undefined
 output = engine.process('A = TRUE. A?')   // output: true
 engine.reset()
-output = egine.process('A?')              // output: undefined
+output = engine.process('A?')              // output: undefined
 ```
 
 ## Language 
@@ -96,7 +96,7 @@ output = egine.process('A?')              // output: undefined
 ### Propositional logic
 Logiks currently supports propositional logic. Statements have a truth value and can be queried.
 
-#### Statemement
+#### Statement
 A statement assigns a truth value to a variable.
 ```
 A = TRUE
@@ -149,10 +149,10 @@ will result in:
 ```
 [true, false, undefined]
 ```
-because Logiks can find a truth value for A via the statement A = TRUE, B by combining A = TRUE and A XOR B = TRUE, but, but cannot for C.
+because Logiks can find a truth value for A via the statement A = TRUE, B by combining A = TRUE and A XOR B = TRUE, but cannot for C.
 
 ### Syntax
-If there are multiple statements or queries in the same line, the statement needs to end with a dot '.' to mark the end of the statemet. If not, usage of a dot is optional.
+If there are multiple statements or queries in the same line, the statement needs to end with a dot '.' to mark the end of the statement. If not, usage of a dot is optional.
 
 A query always needs to end with a question mark '?'.
 
@@ -160,7 +160,7 @@ A query always needs to end with a question mark '?'.
 Logiks is work in progress. Different types of logic systems will be supported. For now, Logiks supports only propositional logic in its most basic form. To support propositional logic fully, there is still stuff to do:
 - Support for all operators: AND, OR, NOT, IMP and EQU
 - Establish operator precedence
-- Support us of brackets
+- Support for brackets
 
 ## Test
 Tests are included. To run the tests:
@@ -179,5 +179,4 @@ query = formula "?";
 formula = variable | xorFormula | andFormula;
 variable = string;
 xorFormula = formula 'xor' formula;
-andFormula = formula 'and' formula;
 ```
