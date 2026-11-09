@@ -1,15 +1,8 @@
-import { expect, test, beforeEach, describe } from 'vitest'
+import { expect, test, describe } from 'vitest'
 
-import { Engine, Variable } from '../engine.ts'
-import { type ApplyForVariableResponse } from '../abstractConstraint.ts'
-import { DistinctValuesConstraint } from '../constraints/distinctValuesConstraint.ts'
-
-const engine = new Engine()
-
-
-beforeEach(() => {
-  engine.reset()
-})
+import { type Variable } from '../engine'
+import { type ApplyForVariableResponse } from '../abstractConstraint'
+import { DistinctValuesConstraint } from '../constraints/distinctValuesConstraint'
 
 describe('Input validation', () => {
 
@@ -35,9 +28,6 @@ describe('Applying the constraint', () => {
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
     const varB: Variable = {name: 'B', domain: Array.from(domain)}
     const varC: Variable = {name: 'C', domain: Array.from(domain)}
-    engine.addVariable(varA)
-    engine.addVariable(varB)
-    engine.addVariable(varC)
     const list = [varA, varB, varC]
     const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
@@ -55,9 +45,6 @@ describe('Applying the constraint', () => {
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
     const varB: Variable = {name: 'B', domain: Array.from(domain)}
     const varC: Variable = {name: 'C', domain: Array.from(domain)}
-    engine.addVariable(varA)
-    engine.addVariable(varB)
-    engine.addVariable(varC)
     const list = [varA, varB, varC]
     const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
@@ -77,9 +64,6 @@ describe('Applying the constraint', () => {
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
     const varB: Variable = {name: 'B', domain: Array.from(domain)}
     const varC: Variable = {name: 'C', domain: Array.from(domain)}
-    engine.addVariable(varA)
-    engine.addVariable(varB)
-    engine.addVariable(varC)
     const list = [varA, varB, varC]
     const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
@@ -99,10 +83,6 @@ describe('Applying the constraint', () => {
     const varB: Variable = {name: 'B', domain: Array.from(domain)}
     const varC: Variable = {name: 'C', domain: Array.from(domain)}
     const varD: Variable = {name: 'D', domain: Array.from(domain)}
-    engine.addVariable(varA)
-    engine.addVariable(varB)
-    engine.addVariable(varC)
-    engine.addVariable(varD)
     const list = [varA, varB, varC, varD]
     const group = [varA.name, varB.name, varC.name] 
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
@@ -125,9 +105,6 @@ describe('Applying the constraint', () => {
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
     const varB: Variable = {name: 'B', domain: Array.from(domain)}
     const varC: Variable = {name: 'C', domain: Array.from(domain)}
-    engine.addVariable(varA)
-    engine.addVariable(varB)
-    engine.addVariable(varC)
     const list = [varA, varB, varC]
     const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)

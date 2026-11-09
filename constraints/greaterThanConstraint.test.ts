@@ -1,99 +1,109 @@
-import { expect, test, beforeEach } from 'vitest'
+import { expect, test, describe } from 'vitest'
 
-import { Engine, Variable } from '../engine.ts'
-import { GreaterThanConstraint } from '../constraints/GreaterThanConstraint.ts'
+import { type Variable } from '../engine'
+import { type ApplyForVariableResponse } from '../abstractConstraint'
+import { GreaterThanConstraint } from '../constraints/greaterThanConstraint'
 
-const engine = new Engine()
-const domain = [1, 2, 3]
-const varA: Variable = {name: 'A', domain: Array.from(domain)}
-const varB: Variable = {name: 'B', domain: Array.from(domain)}
-const varC: Variable = {name: 'C', domain: Array.from(domain)}
-engine.addVariable(varA)
-engine.addVariable(varB)
-engine.addVariable(varC)
-const list = [varA, varB, varC]
-let greaterThanConstraint = new GreaterThanConstraint(engine, varA.name, varB.name)
+describe('Input validation', () => {
 
-beforeEach(() => {
-  engine.reset()
-
-  engine.addVariable(varA)
-  engine.addVariable(varB)
-  engine.addVariable(varC)
-
-  greaterThanConstraint = new GreaterThanConstraint(engine, varA.name, varB.name)
-
-  greaterThanConstraint.setDomainForVariableInList({name: 'A', domain: domain}, list)
-  greaterThanConstraint.setDomainForVariableInList({name: 'B', domain: domain}, list)
-  greaterThanConstraint.setDomainForVariableInList({name: 'C', domain: domain}, list)
-})
-
-test('Constraint with empty group', () => {
-  expect(() => greaterThanConstraint = new GreaterThanConstraint(engine, '', '')).toThrow()
-})
-
-test('Constraint with group with one element', () => {
-  expect(() => greaterThanConstraint = new GreaterThanConstraint(engine, varA.name, '')).toThrow()
-})
-
-test('Constraint with group with multiple elements', () => {
-  expect(() => new GreaterThanConstraint(engine, varA.name, varB.name)).not.toThrow()
-})
-
-test('Variable not in group is ignored', () => {
-  expect(greaterThanConstraint.applyForVariable('X', list)).toStrictEqual({
-    affectedVariables: [],
-    solutionStillPossible: true
+  test('Constraint with missing left side variable', () => {
+    expect(() => new GreaterThanConstraint('', 'B')).toThrow()
   })
 
-  expect(greaterThanConstraint.getVariableFromList('A', list).domain).toStrictEqual(domain)
-  expect(greaterThanConstraint.getVariableFromList('B', list).domain).toStrictEqual(domain)
-  expect(greaterThanConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
-})
-
-test('Variable A with single value', () => {
-  greaterThanConstraint.setDomainForVariableInList({name: 'A', domain: [3]}, list)
-  expect(greaterThanConstraint.applyForVariable('A', list)).toStrictEqual({
-    affectedVariables: ['B'],
-    solutionStillPossible: true
+  test('Constraint with missing left side variable', () => {
+    expect(() => new GreaterThanConstraint('A', '')).toThrow()
   })
 
-  expect(greaterThanConstraint.getVariableFromList('A', list).domain).toStrictEqual([3])
-  expect(greaterThanConstraint.getVariableFromList('B', list).domain).toStrictEqual([1, 2])
-  expect(greaterThanConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
-})
-
-test('Variable A with multiple values', () => {
-  expect(greaterThanConstraint.applyForVariable('A', list)).toStrictEqual({
-    affectedVariables: ['B', 'A'],
-    solutionStillPossible: true
+  test('Constraint with both left and right side variable', () => {
+    expect(() => new GreaterThanConstraint('A', 'B')).not.toThrow()
   })
 
-  expect(greaterThanConstraint.getVariableFromList('A', list).domain).toStrictEqual([2, 3])
-  expect(greaterThanConstraint.getVariableFromList('B', list).domain).toStrictEqual([1, 2])
-  expect(greaterThanConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
 })
 
-test('Variable B with single value', () => {
-  greaterThanConstraint.setDomainForVariableInList({name: 'B', domain: [1]}, list)
-  expect(greaterThanConstraint.applyForVariable('A', list)).toStrictEqual({
-    affectedVariables: ['A'],
-    solutionStillPossible: true
+describe('Applying the constraint', () => {
+
+  test('Constraint is not applicable: Left side variable has a domain with non-numbers', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(['1', '2', 'three'])}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NOT_APPLICABLE' }
+    expect(greaterThanConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
   })
 
-  expect(greaterThanConstraint.getVariableFromList('A', list).domain).toStrictEqual([2, 3])
-  expect(greaterThanConstraint.getVariableFromList('B', list).domain).toStrictEqual([1])
-  expect(greaterThanConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
-})
-
-test('Variable B with multiple values', () => {
-  expect(greaterThanConstraint.applyForVariable('B', list)).toStrictEqual({
-    affectedVariables: ['A', 'B'],
-    solutionStillPossible: true
+  test('Constraint is not applicable: Right side variable has a domain with non-numbers', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(['1', '2', 'three'])}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NOT_APPLICABLE' }
+    expect(greaterThanConstraint.applyForVariable(varB.name, list)).toStrictEqual(reponse)
   })
 
-  expect(greaterThanConstraint.getVariableFromList('A', list).domain).toStrictEqual([2, 3])
-  expect(greaterThanConstraint.getVariableFromList('B', list).domain).toStrictEqual([1, 2])
-  expect(greaterThanConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
+  test('Constraint is not applicable: Variable is neither the left or the right side variable', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NOT_APPLICABLE' }
+    expect(greaterThanConstraint.applyForVariable(varC.name, list)).toStrictEqual(reponse)
+  })
+
 })
 
+test('Constraint is applied - no changes, left and right single value', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from([2])}
+    const varB: Variable = {name: 'B', domain: Array.from([1])}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(greaterThanConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
+})
+
+test('Constraint is applied - no changes, left and right multiple values', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from([2, 3])}
+    const varB: Variable = {name: 'B', domain: Array.from([1, 2])}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(greaterThanConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
+})
+
+test('Constraint is applied - no changes, left single value, right multiple', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from([3])}
+    const varB: Variable = {name: 'B', domain: Array.from([1, 2])}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(greaterThanConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
+})
+
+test('Constraint is applied - no changes, left multiple value, right single', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from([2, 3])}
+    const varB: Variable = {name: 'B', domain: Array.from([1])}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const list = [varA, varB, varC]
+    const greaterThanConstraint = new GreaterThanConstraint('A', 'B')
+    
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(greaterThanConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
+})

@@ -1,10 +1,10 @@
-import { Engine } from '../engine.ts'
+import { Engine } from '../engine'
 import { 
   Table, 
   type InputConstraintTable, 
   type InputConstraintRow, 
   type InputConstraintColumn 
-} from '../table.ts'
+} from '../table'
 
 class Wordoku {
 

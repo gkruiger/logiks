@@ -1,9 +1,9 @@
 import { type Domain, Engine, Tracks } from './engine.ts'
 import { DistinctValuesConstraint } from './constraints/distinctValuesConstraint.ts'
-import { GreaterThanConstraint } from './constraints/GreaterThanConstraint.ts'
-import { LessThanConstraint } from './constraints/LessThanConstraint.ts'
-import { RunLengthConstraint } from './constraints/RunLengthConstraint.ts'
-import { SymbolsCountConstraint } from './constraints/SymbolsCountConstraint.ts'
+import { GreaterThanConstraint } from './constraints/greaterThanConstraint.ts'
+import { LessThanConstraint } from './constraints/lessThanConstraint.ts'
+import { RunLengthConstraint } from './constraints/runLengthConstraint.ts'
+import { SymbolsCountConstraint } from './constraints/symbolsCountConstraint.ts'
 import { IfThenConstraint } from './constraints/ifThenConstraint.ts'
 import { MaxSymbolsCountConstraint } from './constraints/maxSymbolsCountConstraint.ts'
 

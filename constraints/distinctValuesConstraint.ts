@@ -1,6 +1,6 @@
 import { AbstractConstraint } from '../abstractConstraint.ts'
-import type { ApplyForVariableResponse } from '../abstractConstraint'
-import type { Variable } from '../engine'
+import type { ApplyForVariableResponse } from '../abstractConstraint.ts'
+import type { Variable } from '../engine.ts'
 
 export class DistinctValuesConstraint extends AbstractConstraint {
   

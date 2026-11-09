@@ -4,7 +4,7 @@ import {
   type InputConstraintTable, 
   type InputConstraintRow, 
   type InputConstraintColumn 
-} from '../table.ts'
+} from '../table'
 
 
 class Futoshiki {

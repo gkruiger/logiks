@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "es2015",
+      "moduleResolution": "bundler",
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "allowImportingTsExtensions": true
+    }
+}
