@@ -1,7 +1,7 @@
 {
     "scripts": {
         "dev": "node --watch ./puzzles/sudoku.ts",
-        "test": "vitest --no-cache"
+        "test": "vitest --watch"
     },
     "devDependencies": {
         "@vitest/coverage-v8": "^5.0.0",

@@ -1,5 +1,5 @@
 import { type Domain, Engine, Tracks } from './engine.ts'
-import { DistinctValuesConstraint } from './constraints/DistinctValuesConstraint.ts'
+import { DistinctValuesConstraint } from './constraints/distinctValuesConstraint.ts'
 import { GreaterThanConstraint } from './constraints/GreaterThanConstraint.ts'
 import { LessThanConstraint } from './constraints/LessThanConstraint.ts'
 import { RunLengthConstraint } from './constraints/RunLengthConstraint.ts'
@@ -106,7 +106,7 @@ export class Table {
           }
           
           this.engine.addConstraint(
-            new DistinctValuesConstraint(this.engine, groupVariables)
+            new DistinctValuesConstraint(groupVariables)
           )
         }
       } else if(inputConstraintRow.type === 'runLengths') {
@@ -156,7 +156,7 @@ export class Table {
             )
           }
           this.engine.addConstraint(
-            new DistinctValuesConstraint(this.engine, groupVariables)
+            new DistinctValuesConstraint(groupVariables)
           )
         }
       } else if(inputConstraintColumn.type === 'runLengths') {
@@ -284,7 +284,7 @@ export class Table {
                 this.getVariableNameForCell(adjecentCell.row, adjecentCell.column)
               ]
               this.engine.addConstraint(
-                new DistinctValuesConstraint(this.engine, groupVariables)
+                new DistinctValuesConstraint(groupVariables)
               )
             }
           }
@@ -311,7 +311,7 @@ export class Table {
           )
         }
         this.engine.addConstraint(
-          new DistinctValuesConstraint(this.engine, groupVariables)
+          new DistinctValuesConstraint(groupVariables)
         )
       } else if(inputCOnstraintTable.type == 'greaterThan') {
         const variableA = this.getVariableNameForCell(inputCOnstraintTable.celA.row, inputCOnstraintTable.celA.column)

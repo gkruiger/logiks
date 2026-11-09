@@ -10,6 +10,7 @@ class TestConstraint extends AbstractConstraint {
     super()
   }
 
+
   applyForVariable(variableName: string, variables: Variable[]): { solutionStillPossible: boolean; affectedVariables: string[] } {
     return {
       solutionStillPossible: true,

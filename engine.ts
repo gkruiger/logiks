@@ -59,7 +59,6 @@ export class Engine {
     this.constraints.push(constraint)
   }
 
-  
   // Solving
 
   private applyConstraintsForVariable(variableName: string, variables: Variable[]): boolean {
@@ -70,8 +69,8 @@ export class Engine {
       const variableToProcess = affectedVariables.shift() as string
       for(const constaint of this.constraints) {
         let result = constaint.applyForVariable(variableToProcess, variables)
-        if(!result.solutionStillPossible) return false
-        affectedVariables.push(...result.affectedVariables)
+        if(result.status == 'CONTRADICTION') return false
+        if(result.status == 'CHANGES') affectedVariables.push(...result.affectedVariables)
       }
     }
 

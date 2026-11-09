@@ -1,7 +1,8 @@
 import { expect, test, beforeEach, describe } from 'vitest'
 
 import { Engine, Variable } from '../engine.ts'
-import { DistinctValuesConstraint } from '../constraints/DistinctValuesConstraint.ts'
+import { type ApplyForVariableResponse } from '../abstractConstraint.ts'
+import { DistinctValuesConstraint } from '../constraints/distinctValuesConstraint.ts'
 
 const engine = new Engine()
 
@@ -28,7 +29,7 @@ describe('Input validation', () => {
 
 describe('Applying the constraint', () => {
 
-  test('Variable not in group is ignored', () => {
+  test('Constraint is not applicable', () => {
 
     const domain = [1, 2, 3]
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
@@ -41,76 +42,106 @@ describe('Applying the constraint', () => {
     const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
     
-    expect(distinctValuesConstraint.applyForVariable(varC.name, list)).toStrictEqual({status: 'NOT_APPLICABLE'})
+    let reponse: ApplyForVariableResponse = { status: 'NOT_APPLICABLE' }
+    expect(distinctValuesConstraint.applyForVariable(varC.name, list)).toStrictEqual(reponse)
 
     expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual(domain)
     expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual(domain)
     expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
   })
 
-
-
-  /*
-
-  test('Variable without single value is ignored', () => {
+  test('Constraint is applied - no changes: already filtered single value', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    engine.addVariable(varA)
+    engine.addVariable(varB)
+    engine.addVariable(varC)
+    const list = [varA, varB, varC]
+    const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
-    expect(distinctValuesConstraint.applyForVariable('A', list)).toStrictEqual({
-      affectedVariables: [],
-      solutionStillPossible: true
-    })
+    
+    varA.domain = [1]
+    varB.domain = [2]
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(distinctValuesConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
 
-    expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual(domain)
+    expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual([1])
+    expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual([2])
+    expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
+  })
+
+  test('Constraint is applied - no changes: variable has multiple values', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    engine.addVariable(varA)
+    engine.addVariable(varB)
+    engine.addVariable(varC)
+    const list = [varA, varB, varC]
+    const group = [varA.name, varB.name]
+    const distinctValuesConstraint = new DistinctValuesConstraint(group)
+    
+    varA.domain = [1, 2]
+    let reponse: ApplyForVariableResponse = { status: 'NO_CHANGES' }
+    expect(distinctValuesConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
+
+    expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual([1, 2])
     expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual(domain)
     expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
-    expect(distinctValuesConstraint.getVariableFromList('D', list).domain).toStrictEqual(domain)
-    expect(distinctValuesConstraint.getVariableFromList('E', list).domain).toStrictEqual(domain)
   })
 
-  test('Value is filtered for the rest of the group', () => {
+  test('Constraint is applied - changes: other variables have a filtered domain ', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    const varD: Variable = {name: 'D', domain: Array.from(domain)}
+    engine.addVariable(varA)
+    engine.addVariable(varB)
+    engine.addVariable(varC)
+    engine.addVariable(varD)
+    const list = [varA, varB, varC, varD]
+    const group = [varA.name, varB.name, varC.name] 
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'A', domain: [1]}, list)
-
-    expect(distinctValuesConstraint.applyForVariable('A', list)).toStrictEqual({
-      solutionStillPossible: true,
-      affectedVariables: ['B', 'C']
-    })
+    
+    varA.domain = [1]
+    let reponse: ApplyForVariableResponse = { 
+      status: 'CHANGES',
+      affectedVariables: ['B', 'C'] 
+    }
+    expect(distinctValuesConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
 
     expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual([1])
     expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual([2, 3])
     expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual([2, 3])
     expect(distinctValuesConstraint.getVariableFromList('D', list).domain).toStrictEqual(domain)
-    expect(distinctValuesConstraint.getVariableFromList('E', list).domain).toStrictEqual(domain)
   })
 
-  test('Value is already filtered for the rest of the group', () => {
+  test('Constraint is applied - contradiction is found', () => {
+    const domain = [1, 2, 3]
+    const varA: Variable = {name: 'A', domain: Array.from(domain)}
+    const varB: Variable = {name: 'B', domain: Array.from(domain)}
+    const varC: Variable = {name: 'C', domain: Array.from(domain)}
+    engine.addVariable(varA)
+    engine.addVariable(varB)
+    engine.addVariable(varC)
+    const list = [varA, varB, varC]
+    const group = [varA.name, varB.name]
     const distinctValuesConstraint = new DistinctValuesConstraint(group)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'A', domain: [1]}, list)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'B', domain: [2, 3]}, list)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'C', domain: [2, 3]}, list)
-
-    expect(distinctValuesConstraint.applyForVariable('A', list)).toStrictEqual({
-      solutionStillPossible: true,
-      affectedVariables: []
-    })
+    
+    varA.domain = [1]
+    varB.domain = [1]
+    let reponse: ApplyForVariableResponse = { 
+      status: 'CONTRADICTION',
+    }
+    expect(distinctValuesConstraint.applyForVariable(varA.name, list)).toStrictEqual(reponse)
 
     expect(distinctValuesConstraint.getVariableFromList('A', list).domain).toStrictEqual([1])
-    expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual([2, 3])
-    expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual([2, 3])
-    expect(distinctValuesConstraint.getVariableFromList('D', list).domain).toStrictEqual(domain)
-    expect(distinctValuesConstraint.getVariableFromList('E', list).domain).toStrictEqual(domain)
+    expect(distinctValuesConstraint.getVariableFromList('B', list).domain).toStrictEqual([])
+    expect(distinctValuesConstraint.getVariableFromList('C', list).domain).toStrictEqual(domain)
   })
-
-  test('Domain empty: No solution possible: ', () => {
-    const distinctValuesConstraint = new DistinctValuesConstraint(group)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'A', domain: [1]}, list)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'B', domain: [2]}, list)
-    distinctValuesConstraint.setDomainForVariableInList({name: 'C', domain: [1]}, list)
-
-    expect(distinctValuesConstraint.applyForVariable('A', list)).toStrictEqual({
-      solutionStillPossible: false,
-      affectedVariables: []
-    })
-  })
-    */
 
 })

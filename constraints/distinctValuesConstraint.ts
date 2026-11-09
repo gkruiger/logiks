@@ -1,4 +1,4 @@
-import { AbstractConstraint } from '../abstractConstraint'
+import { AbstractConstraint } from '../abstractConstraint.ts'
 import type { ApplyForVariableResponse } from '../abstractConstraint'
 import type { Variable } from '../engine'
 
@@ -12,8 +12,6 @@ export class DistinctValuesConstraint extends AbstractConstraint {
     if(group.length < 2) {
       throw new Error('DistinctValuesConstraint needs to have a group of multiple variables.')
     }
-
-    console.log('!!!!')
 
     this.group = group
   }
@@ -36,19 +34,20 @@ export class DistinctValuesConstraint extends AbstractConstraint {
         const oldDomainLength = groupVariableB.domain.length
         const newDomainLength = this.removeValueOfDomainForVariableInList(groupVariableNameB, groupVariableA.domain[0], variables)
         if(newDomainLength === oldDomainLength) continue
-        if(newDomainLength == 0) {
-          return {
-            solutionStillPossible: false,
-            affectedVariables: []
-          }
-        }
+        if(newDomainLength == 0) return { status: 'CONTRADICTION' }
         affectedVariables.push(groupVariableNameB)
       }
     }
 
-    return {
-      solutionStillPossible: true,
-      affectedVariables
+    if(affectedVariables.length > 0) {
+      return  {
+        status: 'CHANGES',
+        affectedVariables: affectedVariables
+      }
+    } else {
+      return {
+        status: 'NO_CHANGES'
+      }
     }
   }
 

@@ -1,5 +1,3 @@
-import { DistinctValuesConstraint } from '../constraints/DistinctValuesConstraint.ts'
-import { GreaterThanConstraint } from '../constraints/GreaterThanConstraint.ts'
 import { Engine } from '../engine.ts'
 import { 
   Table, 
