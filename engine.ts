@@ -77,7 +77,7 @@ export class Engine {
     return true
   }
 
-  solve(): boolean {
+  solve(showStatistics?: boolean): boolean {
     
     const t0 = performance.now()
 
@@ -100,9 +100,12 @@ export class Engine {
     }
 
     const t1 = performance.now()
-    console.log(`${solutionFound ? 'Solved in' : 'No solution found after'} ${Math.round(t1 - t0)} milliseconds.`)
-    console.log(`Guesses: ${this.guesses} (backtracked: ${this.backTracked}).`)
-  
+
+    if(showStatistics) {
+      console.log(`${solutionFound ? 'Solved in' : 'No solution found after'} ${Math.round(t1 - t0)} milliseconds.`)
+      console.log(`Guesses: ${this.guesses} (backtracked: ${this.backTracked}).`)
+    }
+
     return solutionFound
   }
 

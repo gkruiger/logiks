@@ -6,7 +6,7 @@ import {
   type InputConstraintColumn 
 } from '../table.ts'
 
-class Sudoku {
+export class Sudoku {
 
   constructor(data: (number | undefined)[][], groups?: number[][]) {
 
@@ -60,7 +60,7 @@ class Sudoku {
 
     engine.solve()
 
-    table.printTable()
+    return table.getSolution()
   }
 }
 
@@ -75,6 +75,7 @@ const normalSudoku = new Sudoku([
   [ , 7,  ,  ,  ,  ,  , 6,  ,],
   [ ,  ,  , 3,  , 4,  ,  ,  ,]
 ])
+
 
 /*
 ┌─────────┬───┬───┬───┬───┬───┬───┬───┬───┬───┐

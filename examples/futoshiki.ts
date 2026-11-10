@@ -4,10 +4,10 @@ import {
   type InputConstraintTable, 
   type InputConstraintRow, 
   type InputConstraintColumn 
-} from '../table'
+} from '../table.ts'
 
 
-class Futoshiki {
+export class Futoshiki {
 
   constructor(input: (string)[][]) {
     let engine = new Engine()
@@ -70,32 +70,7 @@ class Futoshiki {
 
     engine.solve()
 
-    table.printTable()
+    return table.getSolution()
   }
 
 }
-
-
-const futoshiki = new Futoshiki([
-  [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', ' ', ' ', 'v', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', ' ', ' ', 'v', ' ',' ' ],
-  [ ' ', ' ', ' ', '<', '3', ' ', ' ', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ' ],
-  [ ' ', ' ', ' ', ' ', 'v', ' ', ' ', ' ','v' ],
-  [ ' ', '>', ' ', '>', ' ', '>', ' ', ' ',' ' ],
-])
-
-/*
-┌─────────┬───┬───┬───┬───┬───┐
-│ (index) │ 0 │ 1 │ 2 │ 3 │ 4 │
-├─────────┼───┼───┼───┼───┼───┤
-│ 0       │ 2 │ 3 │ 4 │ 5 │ 1 │
-│ 1       │ 3 │ 5 │ 1 │ 4 │ 2 │
-│ 2       │ 4 │ 1 │ 3 │ 2 │ 5 │
-│ 3       │ 1 │ 2 │ 5 │ 3 │ 4 │
-│ 4       │ 5 │ 4 │ 2 │ 1 │ 3 │
-└─────────┴───┴───┴───┴───┴───┘
-*/

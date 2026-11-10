@@ -62,21 +62,6 @@ export class Table {
     if(input.inputConstraintsTable) this.addinputCOnstraintTables(input.inputConstraintsTable)
   }
 
-  printTable(): void {
-    let output = []
-    for(let r=0; r<this.rows; r++) {
-      let row = []
-      for(let c=0; c<this.columns; c++) {
-        const variableName = this.getVariableNameForCell(r, c)
-        const domain = this.engine.getDomain(variableName)
-        row.push(domain.length > 1 ? domain.join() : domain[0])
-      }
-      output.push(row)
-    }
-
-    console.table(output)
-  }
-
   private addCellsAsVariables(data: any[][], domain: Domain): void {
     for(let r=0; r<this.rows; r++) {
       for(let c=0; c<this.columns; c++) {
@@ -317,13 +302,13 @@ export class Table {
         const variableA = this.getVariableNameForCell(inputCOnstraintTable.celA.row, inputCOnstraintTable.celA.column)
         const variableB = this.getVariableNameForCell(inputCOnstraintTable.celB.row, inputCOnstraintTable.celB.column)
         this.engine.addConstraint(
-          new GreaterThanConstraint(this.engine, variableA, variableB)
+          new GreaterThanConstraint(variableA, variableB)
         )
       } else if(inputCOnstraintTable.type == 'lessThan') {
         const variableA = this.getVariableNameForCell(inputCOnstraintTable.celA.row, inputCOnstraintTable.celA.column)
         const variableB = this.getVariableNameForCell(inputCOnstraintTable.celB.row, inputCOnstraintTable.celB.column)
         this.engine.addConstraint(
-          new LessThanConstraint(this.engine, variableA, variableB)
+          new LessThanConstraint(variableA, variableB)
         )
       } else if(inputCOnstraintTable.type == 'connectedTracks') {
         for(let r=0; r<this.rows; r++) {
@@ -414,6 +399,27 @@ export class Table {
       column < 0 ||
       column > this.columns - 1
     )
+  }
+
+  printTable(): void {
+    const solution = this.getSolution()
+    console.table(solution)
+  }
+
+  getSolution(): any[][] {
+    let solution = []
+
+    for(let r=0; r<this.rows; r++) {
+      let row = []
+      for(let c=0; c<this.columns; c++) {
+        const variableName = this.getVariableNameForCell(r, c)
+        const domain = this.engine.getDomain(variableName)
+        row.push(domain.length > 1 ? domain.join() : domain[0])
+      }
+      solution.push(row)
+    }
+
+    return solution
   }
 
 }
