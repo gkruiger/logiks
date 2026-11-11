@@ -5,7 +5,7 @@ import {
   type InputConstraintColumn 
 } from '../table.ts'
 
-class Nonogram {
+export class Nonogram {
 
   constructor(rowHints: number[][], columnHints: number[][]) {
     
@@ -51,32 +51,6 @@ class Nonogram {
 
     engine.solve()
 
-    table.printTable()
+    return table.getSolution()
   }
 }
-
-const nonogram = new Nonogram([
-  [ 1, 1 ],
-  [ 1 ],
-  [ 3 ],
-  [ 3 ],
-  [ 4 ] 
-], [ 
-  [ 1 ],
-  [ 1, 1 ],
-  [ 3 ],
-  [ 3 ],
-  [ 2, 2 ] 
-])
-
-/*
-┌─────────┬─────┬─────┬─────┬─────┬─────┐
-│ (index) │ 0   │ 1   │ 2   │ 3   │ 4   │
-├─────────┼─────┼─────┼─────┼─────┼─────┤
-│ 0       │ 'X' │ ' ' │ ' ' │ ' ' │ 'X' │
-│ 1       │ ' ' │ ' ' │ ' ' │ ' ' │ 'X' │
-│ 2       │ ' ' │ 'X' │ 'X' │ 'X' │ ' ' │
-│ 3       │ ' ' │ ' ' │ 'X' │ 'X' │ 'X' │
-│ 4       │ ' ' │ 'X' │ 'X' │ 'X' │ 'X' │
-└─────────┴─────┴─────┴─────┴─────┴─────┘
-*/

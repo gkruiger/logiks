@@ -103,7 +103,6 @@ export class Table {
         }
         this.engine.addConstraint(
           new RunLengthConstraint(
-            this.engine,
             groupVariables, 
             inputConstraintRow.symbol, 
             inputConstraintRow.runLengths
@@ -153,7 +152,6 @@ export class Table {
         }
         this.engine.addConstraint(
           new RunLengthConstraint(
-            this.engine,
             groupVariables, 
             inputConstraintColumn.symbol, 
             inputConstraintColumn.runLengths

@@ -1,17 +1,16 @@
 import { AbstractConstraint } from '../abstractConstraint.ts'
-import { Engine, type Variable } from '../engine.ts'
+import type { ApplyForVariableResponse } from '../abstractConstraint.ts'
+import { type Variable, type Domain } from '../engine.ts'
 
 export class RunLengthConstraint extends AbstractConstraint {
-  
-  engine: Engine
   
   group: string[]
   symbol: string
   runLengths: number[]
 
-  possibleCombinations: (string | undefined)[][] = []
+  possibleCombinations: (any)[][] = []
 
-  constructor(engine: Engine, group: string[], symbol: string, runLengths: number[]) {
+  constructor(group: string[], symbol: string, runLengths: number[]) {
     super()
 
     if(group.length == 0) {
@@ -26,7 +25,6 @@ export class RunLengthConstraint extends AbstractConstraint {
       throw new Error('No run lenghts provided.')      
     }
 
-    this.engine = engine
     this.group = group
     this.symbol = symbol
     this.runLengths = runLengths
@@ -73,14 +71,9 @@ export class RunLengthConstraint extends AbstractConstraint {
     genereateCombinationsRecursively(Array.from(this.runLengths), [])
   }
 
-  applyForVariable(variableName: string, list: Variable[]): { solutionStillPossible: boolean, affectedVariables: string[] } {
+  applyForVariable(variableName: string, list: Variable[]): ApplyForVariableResponse {
     
-    if(!this.group.includes(variableName)) {
-      return {
-        solutionStillPossible: true,
-        affectedVariables: []        
-      }
-    }
+    if(!this.group.includes(variableName)) return { status: 'NOT_APPLICABLE' }
 
     let matchingCombinations = []
     for(const possibleCombination of this.possibleCombinations) {
@@ -101,12 +94,9 @@ export class RunLengthConstraint extends AbstractConstraint {
       }
     }
 
-    if(matchingCombinations.length == 0) return {
-      solutionStillPossible: false,
-      affectedVariables: []
-    }
+    if(matchingCombinations.length == 0) return { status: 'CONTRADICTION' }
 
-    let commonSymbolPlacements: (string | undefined | null)[] = Array.from(matchingCombinations[0])
+    let commonSymbolPlacements = Array.from(matchingCombinations[0])
     for(let m=1; m<matchingCombinations.length; m++) {
       for(let i=0; i<this.group.length; i++) {
         if(commonSymbolPlacements[i] !== matchingCombinations[m][i]) {
@@ -118,22 +108,29 @@ export class RunLengthConstraint extends AbstractConstraint {
     let affectedVariables: string[] = []
     for(let i=0; i<this.group.length; i++) {
       if(commonSymbolPlacements[i] !== null) {
-        if(commonSymbolPlacements[i] == this.symbol) {
-          this.setDomainForVariableInList({name: this.group[i], domain: [this.symbol]}, list)
-        } else {
-          const variableFromGroup = this.getVariableFromList(this.group[i], list)
-          const filteredDomain = variableFromGroup.domain.filter(value => value != this.symbol)
-          this.setDomainForVariableInList({name: this.group[i], domain: filteredDomain}, list)
-        }
+        const variableFromGroup = this.getVariableFromList(this.group[i], list)
+        const filteredDomain = variableFromGroup.domain.filter(value => 
+          commonSymbolPlacements[i] == this.symbol
+            ? value == this.symbol
+            : value != this.symbol
+        )
+        if(filteredDomain.length == 0) return { status: 'CONTRADICTION'}
+        if(filteredDomain.length == variableFromGroup.domain.length) continue
+        this.setDomainForVariableInList({name: this.group[i], domain: filteredDomain as Domain}, list)
         affectedVariables.push(this.group[i])
       }
     }
 
-    return {
-      solutionStillPossible: true,
-      affectedVariables: []
+    if(affectedVariables.length > 0) {
+      return  {
+        status: 'CHANGES',
+        affectedVariables: affectedVariables
+      }
+    } else {
+      return {
+        status: 'NO_CHANGES'
+      }
     }
-
   }
 
 }

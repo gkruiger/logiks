@@ -22,7 +22,7 @@ describe('Input validation', () => {
 
 describe('Applying the constraint', () => {
 
-  test('Constraint is not applicable', () => {
+  test('Constraint is not applicable: variable not in group', () => {
 
     const domain = [1, 2, 3]
     const varA: Variable = {name: 'A', domain: Array.from(domain)}
