@@ -48,7 +48,7 @@ export class TrainTrack {
       inputConstraintsTable: tableConstraints
     })
 
-    engine.solve(true)
+    engine.solve()
 
     return table.getSolution()
   }
