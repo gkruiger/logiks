@@ -1,20 +1,21 @@
-import { Engine, Tracks } from '../engine.ts'
+import { Engine } from '../engine.ts'
 import { 
   Table, 
+  Tracks,
   type InputConstraintRow, 
   type InputConstraintColumn,
   type InputConstraintTable
 } from '../table.ts'
 
-class TrainTrack {
+export class TrainTrack {
 
   constructor(data: (string | undefined)[][], rowHints: number[], columnHints: number[]) {
     
     let engine = new Engine()
 
     const emptyCell = ' '
-    const tracks = Tracks.map(t => t.symbol)
-    const domain = [emptyCell, ...tracks]
+    const domain = Tracks.map(t => t.symbol)
+    const tracks = domain.filter(t => t !== emptyCell)
 
     let rowConstraints: InputConstraintRow[] = []    
     for(let r=0; r<rowHints.length; r++) {
@@ -46,14 +47,46 @@ class TrainTrack {
       inputConstraintsColumn: columnConstraints,
       inputConstraintsTable: tableConstraints
     })
- 
-    engine.solve()
+
+    engine.solve(true)
 
     table.printTable()
+
+    return table.getSolution()
   }
 }
 
-const trainTrack = new TrainTrack([
+const solutionFound = new TrainTrack([
+  ['╔', '╗', '║'],
+  ['║', '║', '║'],
+  ['╝', '╚', '╝'],
+],
+  [3, 3, 3],
+  [3, 3, 3]
+)
+
+const solution = [
+  ['╔', '╗', '║'],
+  ['║', '║', '║'],
+  ['╝', '╚', '╝'],
+]
+
+const solutionFound2 = new TrainTrack([
+  ['╔', '═', '╗'],
+  [   , ' ', '║'],
+  ['╝', '╔', '╝'],
+],
+  [3, 2, 3],
+  [3, 2, 3]
+)
+
+const solution2 = [
+  ['╔', '═', '╗'],
+  ['║', ' ', '║'],
+  ['╝', '╔', '╝'],
+]
+
+const solutionFound3 = new TrainTrack([
   [   ,   ,   ,   ,   ,],
   ['╝',   ,   ,   ,   ,],
   [   ,   ,   ,'═',   ,],
@@ -64,16 +97,10 @@ const trainTrack = new TrainTrack([
   [2, 3, 5, 3, 3]
 )
 
-/*
-
-┌─────────┬─────┬─────┬─────┬─────┬─────┐
-│ (index) │ 0   │ 1   │ 2   │ 3   │ 4   │
-├─────────┼─────┼─────┼─────┼─────┼─────┤
-│ 0       │ '╔' │ '═' │ '╗' │ '╔' │ '╗' │
-│ 1       │ '╝' │ ' ' │ '╚' │ '╝' │ '║' │
-│ 2       │ ' ' │ ' ' │ '╔' │ '═' │ '╝' │
-│ 3       │ ' ' │ '╔' │ '╝' │ ' ' │ ' ' │
-│ 4       │ ' ' │ '╚' │ '╗' │ ' ' │ ' ' │
-└─────────┴─────┴─────┴─────┴─────┴─────┘
-
-*/
+const solution3 = [
+  ['╔', '═', '╗', '╔', '╗', ],
+  ['╝', ' ', '╚', '╝', '║', ],
+  [' ', ' ', '╔', '═', '╝', ],
+  [' ', '╔', '╝', ' ', ' ', ],
+  [' ', '╚', '╗', ' ', ' ', ],
+]

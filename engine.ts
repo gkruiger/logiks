@@ -1,20 +1,11 @@
 import { AbstractConstraint } from './abstractConstraint.ts'
 
-export const Tracks = [
-  {symbol: '═', connections: [{x: -1, y:  0}, {x: +1, y:  0}]},
-  {symbol: '║', connections: [{x:  0, y: -1}, {x:  0, y:  1}]},
-  {symbol: '╔', connections: [{x:  0, y: +1}, {x: +1, y:  0}]},
-  {symbol: '╗', connections: [{x: -1, y:  0}, {x:  0, y:  1}]},
-  {symbol: '╚', connections: [{x:  0, y: -1}, {x: +1, y:  0}]},
-  {symbol: '╝', connections: [{x: -1, y:  0}, {x:  0, y: -1}]}
-]
-
 export type Variable = { 
   name: string, 
   domain: Domain,
 }
 
-export type Domain = string[] | number[]
+export type Domain = any[]
 
 type SolverState = {
   variables: Variable[]
@@ -45,6 +36,12 @@ export class Engine {
     }
         
     this.variables.push(variable)
+  }
+
+  setDomain(variableName: string, domain: Domain): void {
+    let variable = this.variables.find(v => v.name === variableName)
+    if(!variable) throw new Error(`Variable ${variableName} not found`)
+    variable.domain = domain
   }
 
   getDomain(variableName: string): Domain {
@@ -163,7 +160,7 @@ export class Engine {
     return solverState
   }
 
-  // Extra functions
+  // Helper functions
 
   printVariables(): void {
     this.variables.forEach(variable =>

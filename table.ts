@@ -1,4 +1,4 @@
-import { type Domain, Engine, Tracks } from './engine.ts'
+import { type Domain, Engine } from './engine.ts'
 import { DistinctValuesConstraint } from './constraints/distinctValuesConstraint.ts'
 import { GreaterThanConstraint } from './constraints/greaterThanConstraint.ts'
 import { LessThanConstraint } from './constraints/lessThanConstraint.ts'
@@ -6,6 +6,7 @@ import { RunLengthConstraint } from './constraints/runLengthConstraint.ts'
 import { SymbolsCountConstraint } from './constraints/symbolsCountConstraint.ts'
 import { IfThenConstraint } from './constraints/ifThenConstraint.ts'
 import { MaxSymbolsCountConstraint } from './constraints/maxSymbolsCountConstraint.ts'
+import { type LookupTable, AttributesAreEqualConstraint } from './constraints/attributesAreEqualConstraint.ts'
 
 export type InputConstraintRow =
   | { type: 'distinctValues'}
@@ -31,6 +32,32 @@ export type InputConstraintTable =
   | { type: 'lessThan', celA: {row: number, column: number}, celB: {row: number, column: number} }
   | { type: 'connectedTracks' }
   | { type: 'filledAdjacentCells', symbols: string[], filledCells: number, row: number, column: number }
+
+export type Track = {symbol: string, north: boolean, east: boolean, south: boolean, west: boolean}
+
+export const Tracks: Track[] = [
+  {symbol: '═', north: false, east: true, south: false, west: true},
+  {symbol: '║', north: true, east: false, south: true, west: false},
+  {symbol: '╔', north: false, east: true, south: true, west: false},
+  {symbol: '╗', north: false, east: false, south: true, west: true},
+  {symbol: '╚', north: true, east: true, south: false, west: false},
+  {symbol: '╝', north: true, east: false, south: false, west: true},
+  {symbol: ' ', north: false, east: false, south: false, west: false},
+]
+
+export const tracksLookupTable: LookupTable = Tracks.flatMap(track => [
+  {variable: track.symbol, attribute: 'north', value: track.north},
+  {variable: track.symbol, attribute: 'east', value: track.east},
+  {variable: track.symbol, attribute: 'south', value: track.south},
+  {variable: track.symbol, attribute: 'west', value: track.west}
+])
+
+const connections = [
+  { name: 'north', otherCell: { x: 0, y: -1 }, nameOtherConnection: 'south'},
+  { name: 'east', otherCell: { x: 1, y: 0 }, nameOtherConnection: 'west'}, 
+  { name: 'south', otherCell: { x: 0, y: 1 }, nameOtherConnection: 'north'}, 
+  { name: 'west', otherCell: { x: -1, y: 0 }, nameOtherConnection: 'east'} 
+]
 
 export class Table {
 
@@ -117,7 +144,6 @@ export class Table {
         }
         this.engine.addConstraint(
           new SymbolsCountConstraint(
-            this.engine,
             groupVariables,
             inputConstraintRow.symbols,
             inputConstraintRow.filledCells, 
@@ -166,7 +192,6 @@ export class Table {
         }
         this.engine.addConstraint(
           new SymbolsCountConstraint(
-            this.engine,
             groupVariables,
             inputConstraintColumn.symbols,
             inputConstraintColumn.filledCells, 
@@ -311,53 +336,68 @@ export class Table {
       } else if(inputCOnstraintTable.type == 'connectedTracks') {
         for(let r=0; r<this.rows; r++) {
           for(let c=0; c<this.columns; c++) {
-            Tracks.forEach(track =>
-              track.connections.forEach(connection => {
-                const consequenceCel = {
-                  x: c+connection.x,
-                  y: r+connection.y
-                }
+            for(const connection of connections) {
+              const rowForVariableB = r + connection.otherCell.y
+              const columnForVariableB = c + connection.otherCell.x
+              const bIsOutSideTable = this.cellIsOutsideTable(rowForVariableB, columnForVariableB)
+              
+              if(bIsOutSideTable) continue
 
-                const variableName = this.getVariableNameForCell(r, c)
-                const domain = this.engine.getDomain(variableName)
-                const isCelGiven = domain.length == 1
-                const isOutSideTable = this.cellIsOutsideTable(consequenceCel.y, consequenceCel.x)
+              const variableA = this.getVariableNameForCell(r, c)
+              const attributeA = connection.name
+              const variableB = this.getVariableNameForCell(rowForVariableB, columnForVariableB)
+              const attributeB = connection.nameOtherConnection
 
-                if(isOutSideTable && isCelGiven) return
+              if(variableA === variableB) throw new Error('!!')
 
-                let consequenceVariable = this.getVariableNameForCell(consequenceCel.y, consequenceCel.x)
-                let consequenceDomain = Tracks
-                  .filter(t => {
-                    let hasMatchingConnection = false
-                    for(const c of t.connections) {
-                      if(c.x == -connection.x && c.y == -connection.y) hasMatchingConnection = true
-                    }
-                    return hasMatchingConnection
-                  })
-                  .map(t => t.symbol)
-
-                if(isOutSideTable && !isCelGiven) {
-                  consequenceVariable = this.getVariableNameForCell(r, c)
-                  consequenceDomain = []
-                }
-                
-                this.engine.addConstraint(
-                  new IfThenConstraint(
-                    this.engine,
-                    [{
-                      type: 'variableIsEqualTo',
-                      variable: this.getVariableNameForCell(r, c),
-                      value: track.symbol
-                    }], 
-                    [{
-                      type: 'setDomain',
-                      variable: consequenceVariable,
-                      domain: consequenceDomain
-                    }]
-                  )
+              this.engine.addConstraint(
+                new AttributesAreEqualConstraint(
+                  variableA,
+                  attributeA,
+                  variableB,
+                  attributeB,
+                  tracksLookupTable
                 )
-              })
-            )
+              )
+            }
+
+            let variable = this.getVariableNameForCell(r, c)
+            const domain = this.engine.getDomain(variable)
+            const isGiven = domain.length == 1
+            if(!isGiven) {
+              if(r==0) {
+                const filteredDomain = domain.filter(d => {
+                  const track = Tracks.find(track => track.symbol == d)
+                  if(track == undefined) throw new Error('Huh!?')
+                  return !track.north
+                })
+                this.engine.setDomain(variable, filteredDomain)
+              }
+              if(c==0) {
+                const filteredDomain = domain.filter(d => {
+                  const track = Tracks.find(track => track.symbol == d)
+                  if(track == undefined) throw new Error('Huh!?')
+                  return !track.west
+                })
+                this.engine.setDomain(variable, filteredDomain)
+              }
+              if(r==this.rows-1) {
+                const filteredDomain = domain.filter(d => {
+                  const track = Tracks.find(track => track.symbol == d)
+                  if(track == undefined) throw new Error('Huh!?')
+                  return !track.south
+                })
+                this.engine.setDomain(variable, filteredDomain)
+              }
+              if(c==this.columns-1) {
+                const filteredDomain = domain.filter(d => {
+                  const track = Tracks.find(track => track.symbol == d)
+                  if(track == undefined) throw new Error('Huh!?')
+                  return !track.east
+                })
+                this.engine.setDomain(variable, filteredDomain)
+              }
+            }
           }
         }           
       } else if(inputCOnstraintTable.type == 'filledAdjacentCells') {
