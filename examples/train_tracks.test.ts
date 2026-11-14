@@ -25,23 +25,3 @@ test('Train Tracks', () => {
   
   expect(solutionFound).toStrictEqual(solution)
 })
-
-test.skip('Train Tracks', () => {
-
-  const solutionFound = new TrainTrack([
-    [   , '═',    ,],
-    [   ,    ,    ,],
-    ['╝', '╔',    ,],
-  ],
-    [3, 2, 3],
-    [3, 2, 3]
-  )
-
-  const solution = [
-    ['╔', '═', '╗'],
-    ['║', ' ', '║'],
-    ['╝', '╔', '╝'],
-  ]
-  
-  expect(solutionFound).toStrictEqual(solution)
-})
